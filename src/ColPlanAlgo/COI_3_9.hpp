@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 #include <stdlib.h>
+#include <array>
+#include <tuple>
 
 using namespace std;
 
@@ -63,57 +65,74 @@ T COI_3_9<T>::Start()
 {
     while(notNull(N_max) && !isUsedRows())
     {
+        vector<pair<T, int>> first_max(num_rows, {T(0), 0});
+        vector<pair<T, int>> second_max(num_rows, {T(0), 0});
+
         for(int i = 0; i < num_rows; i++)
         {
-            pair<T, int> max_d = {0, 0};
-
             if(used_rows[i]) continue;
 
             for(int j = 0; j < num_cols; j++)
             {
-                if(used_cols[j]) continue;
-
-                if(D[i][j] > max_d.first)
+                if(D[i][j] > first_max[i].first && !used_cols[j])
                 {
-                    max_d.first = D[i][j];
-                    max_d.second = j;
+                    first_max[i].first = D[i][j];
+                    first_max[i].second = j;
                 }
             }
 
-            bool is_optimal = true;
-
-            for(int j = 0; j < num_rows; j++)
+            for(int j = 0; j < num_cols; j++)
             {
-                if(j != i && !used_rows[j])
+                if(D[i][j] > second_max[i].first && !used_cols[j] && j != first_max[i].second)
                 {
-                    if(D[j][max_d.second] >= max_d.first)
-                    {
-                        if((D[j][max_d.second] == max_d.first) && (j > i))
-                            continue;
-
-                        is_optimal = false;
-                        break;
-                    }
+                    second_max[i].first = D[i][j];
+                    second_max[i].second = j;
                 }
-            }
-
-            if(is_optimal)
-            {
-                used_rows[i] = true;
-
-                if(--N_max[max_d.second] == 0)
-                {
-                    used_cols[max_d.second] = true;
-                }
-
-                answer += max_d.first;
-
-#if DEBUG
-                cout << "row: " << i + 1 << " col: " << max_d.second + 1 << " value: " << max_d.first << endl;
-                printMatrix(D);
-#endif
             }
         }
+
+        vector<T> result(num_rows, 0);
+        vector<T> delta(num_rows, 0);
+        pair<T, int> res = {T(0), 0};
+
+        for(int i = 0; i < num_rows; i++)
+        {
+            result[i] = 2 * first_max[i].first - second_max[i].first;
+            delta[i] = first_max[i].first - second_max[i].first;
+        }
+
+        for(int i = 0; i < num_rows; i++)
+        {
+            if(res.first < result[i])
+            {
+                res.first = result[i];
+                res.second = i;
+            }
+            else if(res.first == result[i])
+            {
+                if(delta[res.second] < delta[i])
+                {
+                    res.first = result[i];
+                    res.second = i;
+                }
+            }
+        }
+
+
+        used_rows[res.second] = true;
+
+        if(--N_max[first_max[res.second].second] == 0)
+        {
+            used_cols[first_max[res.second].second] = true;
+        }
+
+        answer += first_max[res.second].first;
+
+#if DEBUG
+        cout << "row: " << i + 1 << " col: " << max_d.second + 1 << " value: " << max_d.first << endl;
+        printMatrix(D);
+#endif
+
     }
 
     return answer;

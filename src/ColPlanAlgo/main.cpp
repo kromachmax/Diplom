@@ -1,6 +1,7 @@
 #include <QApplication>
 
 #include <COI_3_7.hpp>
+#include <COI_3_9.hpp>
 
 using namespace std;
 
@@ -57,7 +58,8 @@ int main(int argc, char *argv[])
 
     cout << "Starting compute..." << endl;
 
-    COI_3_7<float> coi(n, m, D, N);
+    //COI_3_7<float> coi(n, m, D, N);
+    COI_3_9<float> coi(n, m, D, N);
 
     float answer = coi.Start();
 
