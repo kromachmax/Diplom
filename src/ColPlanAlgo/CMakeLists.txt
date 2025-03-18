@@ -16,9 +16,8 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
 set(PROJECT_SOURCES
         main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+        COI_3_7.hpp
+        COI_3_9.hpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -42,7 +41,9 @@ else()
             ${PROJECT_SOURCES}
         )
     endif()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG=0)
 endif()
+
 
 target_link_libraries(ColPlanAlgo PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
