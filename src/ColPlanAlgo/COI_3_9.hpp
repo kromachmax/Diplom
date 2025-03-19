@@ -122,12 +122,6 @@ T COI_3_9<T>::Start()
         }
 
         answer += first_max[res.second].first;
-
-#if DEBUG
-        cout << "row: " << res.second + 1 << " col: " << first_max[res.second].second + 1 << " value: " << first_max[res.second].first << endl;
-        printMatrix(D);
-#endif
-
     }
 
     return answer;

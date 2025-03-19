@@ -1,10 +1,5 @@
-#ifndef COI_H
-#define COI_H
-
-#include <iostream>
-#include <vector>
-#include <string>
-#include <stdlib.h>
+#ifndef COI_3_6_HPP
+#define COI_3_6_HPP
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -13,11 +8,11 @@
 #define eps 1e-3
 
 template <typename T>
-class COI_3_7
+class COI_3_6
 {
 public:
-    COI_3_7() noexcept = default;
-    explicit COI_3_7(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
+    COI_3_6() noexcept = default;
+    explicit COI_3_6(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
     void Update(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
     [[nodiscard]] T Start();
 
@@ -43,7 +38,7 @@ private:
 
 
 template<typename T>
-COI_3_7<T>::COI_3_7(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N)
+COI_3_6<T>::COI_3_6(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N)
     : num_rows(n), num_cols(m), D(D), N_max(N), used_rows(n, false), used_cols(m, false)
 {
     if (D.size() != n || (n > 0 && D[0].size() != m) || N.size() != m)
@@ -54,67 +49,15 @@ COI_3_7<T>::COI_3_7(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D
 
 
 template<typename T>
-T COI_3_7<T>::Start()
+T COI_3_6<T>::Start()
 {
-    while(notNull(N_max) && !isUsedRows())
-    {
-        for(std::size_t i = 0; i < num_rows; i++)
-        {
-            std::pair<T, std::size_t> max_d = {0, 0};
 
-            if(used_rows[i]) continue;
-
-            for(std::size_t j = 0; j < num_cols; j++)
-            {
-                if(used_cols[j]) continue;
-
-                if(D[i][j] > max_d.first)
-                {
-                    max_d.first = D[i][j];
-                    max_d.second = j;
-                }
-            }
-
-            bool is_optimal = true;
-
-            for(std::size_t j = 0; j < num_rows; j++)
-            {
-                if(j != i && !used_rows[j])
-                {
-                    if(D[j][max_d.second] > max_d.first)
-                    {
-                        is_optimal = false;
-                        break;
-                    }
-                    else if(abs(D[j][max_d.second] - max_d.first) < eps)
-                    {
-                        if(j > i) continue;
-
-                        is_optimal = false;
-                        break;
-                    }
-                }
-            }
-
-            if(is_optimal)
-            {
-                used_rows[i] = true;
-
-                if(--N_max[max_d.second] == 0)
-                {
-                    used_cols[max_d.second] = true;
-                }
-
-                answer += max_d.first;
-            }
-        }
-    }
     return answer;
 }
 
 
 template<typename T>
-void COI_3_7<T>::Update(std::size_t n, std::size_t m, std::vector<std::vector<T> > &D, std::vector<int> &N)
+void COI_3_6<T>::Update(std::size_t n, std::size_t m, std::vector<std::vector<T> > &D, std::vector<int> &N)
 {
     if (D.size() != n || (n > 0 && D[0].size() != m) || N.size() != m)
     {
@@ -133,28 +76,28 @@ void COI_3_7<T>::Update(std::size_t n, std::size_t m, std::vector<std::vector<T>
 
 template<typename T>
 template<typename F>
-bool COI_3_7<T>::notNull(const std::vector<F>& v) const noexcept
+bool COI_3_6<T>::notNull(const std::vector<F>& v) const noexcept
 {
     return std::any_of(v.begin(), v.end(), [](const F& val) { return val > 0; });
 }
 
 
 template<typename T>
-bool COI_3_7<T>::isUsedRows() const noexcept
+bool COI_3_6<T>::isUsedRows() const noexcept
 {
     return std::all_of(used_rows.begin(), used_rows.end(), [](bool used) { return used; });
 }
 
 
 template<typename T>
-bool COI_3_7<T>::isUsedCols() const noexcept
+bool COI_3_6<T>::isUsedCols() const noexcept
 {
     return std::all_of(used_cols.begin(), used_cols.end(), [](bool used) { return used; });
 }
 
 
 template<typename T>
-void COI_3_7<T>::printMatrix(const std::vector<std::vector<T>>& matrix) const
+void COI_3_6<T>::printMatrix(const std::vector<std::vector<T>>& matrix) const
 {
     std::cout << '\n';
     for (std::size_t i = 0; i < matrix.size(); ++i)
@@ -174,5 +117,4 @@ void COI_3_7<T>::printMatrix(const std::vector<std::vector<T>>& matrix) const
     std::cout << '\n';
 }
 
-
-#endif // COI_H
+#endif // COI_3_6_HPP
