@@ -12,6 +12,7 @@ using namespace std;
 #define DEBUG 0
 #endif
 
+#define eps 1e-3
 
 template <typename T>
 class COI_3_7
@@ -20,6 +21,7 @@ public:
     COI_3_7() = default;
     COI_3_7(int n, int m, vector<vector<T>>& D, vector<int>& N);
     T Start();
+    T Update(int n, int m, vector<vector<T>>& D, vector<int>& N);
 
 private:
     bool isUsedRows();
@@ -86,10 +88,14 @@ T COI_3_7<T>::Start()
             {
                 if(j != i && !used_rows[j])
                 {
-                    if(D[j][max_d.second] >= max_d.first)
+                    if(D[j][max_d.second] > max_d.first)
                     {
-                        if((D[j][max_d.second] == max_d.first) && (j > i))
-                            continue;
+                        is_optimal = false;
+                        break;
+                    }
+                    else if(abs(D[j][max_d.second] - max_d.first) < eps)
+                    {
+                        if(j > i) continue;
 
                         is_optimal = false;
                         break;
@@ -117,6 +123,21 @@ T COI_3_7<T>::Start()
     }
 
     return answer;
+}
+
+template<typename T>
+T COI_3_7<T>::Update(int n, int m, vector<vector<T> > &D, vector<int> &N)
+{
+    num_rows = n;
+    num_cols = m;
+
+    this->D = D;
+    this->N_max = N;
+
+    answer = T(0);
+
+    used_rows = vector<bool>(n, false);
+    used_cols = vector<bool>(m, false);
 }
 
 

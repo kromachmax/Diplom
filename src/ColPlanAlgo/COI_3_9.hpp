@@ -14,6 +14,7 @@ using namespace std;
 #define DEBUG 0
 #endif
 
+#define eps 1e-3
 
 template <typename T>
 class COI_3_9
@@ -22,6 +23,7 @@ public:
     COI_3_9() = default;
     COI_3_9(int n, int m, vector<vector<T>>& D, vector<int>& N);
     T Start();
+    T Update(int n, int m, vector<vector<T>>& D, vector<int>& N);
 
 private:
     bool isUsedRows();
@@ -108,7 +110,7 @@ T COI_3_9<T>::Start()
                 res.first = result[i];
                 res.second = i;
             }
-            else if(res.first == result[i])
+            else if(abs(res.first - result[i]) < eps)
             {
                 if(delta[res.second] < delta[i])
                 {
@@ -117,7 +119,6 @@ T COI_3_9<T>::Start()
                 }
             }
         }
-
 
         used_rows[res.second] = true;
 
@@ -129,13 +130,28 @@ T COI_3_9<T>::Start()
         answer += first_max[res.second].first;
 
 #if DEBUG
-        cout << "row: " << i + 1 << " col: " << max_d.second + 1 << " value: " << max_d.first << endl;
+        cout << "row: " << res.second + 1 << " col: " << first_max[res.second].second + 1 << " value: " << first_max[res.second].first << endl;
         printMatrix(D);
 #endif
 
     }
 
     return answer;
+}
+
+template<typename T>
+T COI_3_9<T>::Update(int n, int m, vector<vector<T> > &D, vector<int> &N)
+{
+    num_rows = n;
+    num_cols = m;
+
+    this->D = D;
+    this->N_max = N;
+
+    answer = T(0);
+
+    used_rows = vector<bool>(n, false);
+    used_cols = vector<bool>(m, false);
 }
 
 

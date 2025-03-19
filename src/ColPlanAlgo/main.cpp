@@ -1,9 +1,9 @@
-#include <QApplication>
+//#include <QApplication>
 
-#include <COI_3_7.hpp>
-#include <COI_3_9.hpp>
+//#include <COI_3_7.hpp>
+//#include <COI_3_9.hpp>
 
-using namespace std;
+//using namespace std;
 
 
 //0.10 0.09 0.04 0.08 0.05
@@ -24,46 +24,120 @@ using namespace std;
 //0.24 0.20 0.24 0.24 0.18
 
 
-int main(int argc, char *argv[])
+/*
+int n, m;
+
+cout << "Enter number of rows: " << endl;
+
+cin >> n;
+
+cout << "Enter number of columns: " << endl;
+
+cin >> m;
+
+vector<vector<double>> D(n, vector<double>(m));
+vector<int> N(m);
+
+cout << "Enter the matrix of efficiency: " << endl;
+
+for(int i = 0; i < n; i++)
 {
-    int n, m;
-
-    cout << "Enter number of rows: " << endl;
-
-    cin >> n;
-
-    cout << "Enter number of columns: " << endl;
-
-    cin >> m;
-
-    vector<vector<float>> D(n, vector<float>(m));
-    vector<int> N(m);
-
-    cout << "Enter the matrix of efficiency: " << endl;
-
-    for(int i = 0; i < n; i++)
+    for(int j = 0; j < m; j++)
     {
-        for(int j = 0; j < m; j++)
-        {
-            cin >> D[i][j];
-        }
+        cin >> D[i][j];
     }
+}
 
-    cout << "Enter the N_max vector: " << endl;
+cout << "Enter the N_max vector: " << endl;
 
-    for(int i = 0; i < m; i++)
-    {
-        cin >> N[i];
-    }
+for(int i = 0; i < m; i++)
+{
+    cin >> N[i];
+}
 
-    cout << "Starting compute..." << endl;
+cout << "Starting compute..." << endl;
 
-    //COI_3_7<float> coi(n, m, D, N);
-    COI_3_9<float> coi(n, m, D, N);
+COI_3_7<double> coi(n, m, D, N);
+//COI_3_9<double> coi(n, m, D, N);
 
-    float answer = coi.Start();
+float answer = coi.Start();
 
-    cout << "Answer: " << answer << endl;
+cout << "Answer: " << answer << endl;
+*/
 
-    return 0;
+
+//int main(int argc, char *argv[])
+//{
+//    return 0;
+//}
+
+
+#include <QtWidgets/QApplication>
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
+#include <QtCharts/QValueAxis>
+#include <QMainWindow>
+
+QT_CHARTS_USE_NAMESPACE
+
+int main(int argc, char *argv[]) {
+    QApplication app(argc, argv);
+
+    // Создание серий данных
+    QLineSeries *series1 = new QLineSeries();
+    series1->setName("Dataset 1");
+    series1->append(0, 1);
+    series1->append(1, 2);
+    series1->append(2, 3);
+    series1->append(3, 2);
+    series1->append(4, 5);
+
+    QLineSeries *series2 = new QLineSeries();
+    series2->setName("Dataset 2");
+    series2->append(0, 0);
+    series2->append(1, 1);
+    series2->append(2, 2);
+    series2->append(3, 4);
+    series2->append(4, 3);
+
+    // Создание объекта графика
+    QChart *chart = new QChart();
+    chart->addSeries(series1); // Добавление первой серии
+    chart->addSeries(series2); // Добавление второй серии
+    chart->setTitle("Example Line Chart");
+    chart->legend()->setAlignment(Qt::AlignBottom);
+
+    // Настройка осей
+    QValueAxis *axisX = new QValueAxis();
+    axisX->setTitleText("X Axis");
+    axisX->setRange(0, 4);
+    axisX->setLabelFormat("%.0f");
+
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Y Axis");
+    axisY->setRange(0, 6);
+    axisY->setLabelFormat("%.0f");
+
+    // Добавление осей к графику
+    chart->addAxis(axisX, Qt::AlignBottom); // Ось X внизу
+    chart->addAxis(axisY, Qt::AlignLeft);   // Ось Y слева
+
+    // Привязка осей к сериям
+    series1->attachAxis(axisX);
+    series1->attachAxis(axisY);
+    series2->attachAxis(axisX);
+    series2->attachAxis(axisY);
+
+    // Создание представления графика
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+
+    // Настройка окна
+    QMainWindow window;
+    window.setCentralWidget(chartView);
+    window.resize(800, 600);
+    window.setWindowTitle("Qt Chart Example");
+    window.show();
+
+    return app.exec();
 }
