@@ -6,7 +6,7 @@
 #include <string>
 #include <stdlib.h>
 
-using namespace std;
+//using namespace std;
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -18,45 +18,40 @@ template <typename T>
 class COI_3_7
 {
 public:
-    COI_3_7() = default;
-    COI_3_7(int n, int m, vector<vector<T>>& D, vector<int>& N);
-    T Start();
-    T Update(int n, int m, vector<vector<T>>& D, vector<int>& N);
+    COI_3_7() noexcept = default;
+    explicit COI_3_7(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
+    void Update(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
+    [[nodiscard]] T Start();
 
 private:
-    bool isUsedRows();
-    bool isUsedCols();
+    [[nodiscard]] bool isUsedRows() const noexcept;
+    [[nodiscard]] bool isUsedCols() const noexcept;
     template<typename F>
-    bool notNull(const vector<F>& v);
+    [[nodiscard]]bool notNull(const std::vector<F>& v) const noexcept;
 
-    void printMatrix(const vector<vector<T>>& matrix);
+    void printMatrix(const std::vector<std::vector<T>>& matrix) const;
 
 private:
-    int num_rows;
-    int num_cols;
+    std::size_t num_rows = 0;
+    std::size_t num_cols = 0;
 
-    vector<vector<T>> D;
-    vector<int> N_max;
-    vector<bool> used_rows;
-    vector<bool> used_cols;
+    std::vector<std::vector<T>> D;
+    std::vector<int> N_max;
+    std::vector<bool> used_rows;
+    std::vector<bool> used_cols;
 
-    T answer;
+    T answer = T(0);
 };
 
 
 template<typename T>
-COI_3_7<T>::COI_3_7(int n, int m, vector<vector<T>>& D, vector<int>& N)
+COI_3_7<T>::COI_3_7(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N)
+    : num_rows(n), num_cols(m), D(D), N_max(N), used_rows(n, false), used_cols(m, false)
 {
-    num_rows = n;
-    num_cols = m;
-
-    this->D = D;
-    this->N_max = N;
-
-    answer = T(0);
-
-    used_rows = vector<bool>(n, false);
-    used_cols = vector<bool>(m, false);
+    if (D.size() != n || (n > 0 && D[0].size() != m) || N.size() != m)
+    {
+        throw std::invalid_argument("Invalid dimensions or sizes for D or N");
+    }
 }
 
 
@@ -65,13 +60,13 @@ T COI_3_7<T>::Start()
 {
     while(notNull(N_max) && !isUsedRows())
     {
-        for(int i = 0; i < num_rows; i++)
+        for(std::size_t i = 0; i < num_rows; i++)
         {
-            pair<T, int> max_d = {0, 0};
+            std::pair<T, std::size_t> max_d = {0, 0};
 
             if(used_rows[i]) continue;
 
-            for(int j = 0; j < num_cols; j++)
+            for(std::size_t j = 0; j < num_cols; j++)
             {
                 if(used_cols[j]) continue;
 
@@ -84,7 +79,7 @@ T COI_3_7<T>::Start()
 
             bool is_optimal = true;
 
-            for(int j = 0; j < num_rows; j++)
+            for(std::size_t j = 0; j < num_rows; j++)
             {
                 if(j != i && !used_rows[j])
                 {
@@ -113,7 +108,6 @@ T COI_3_7<T>::Start()
                 }
 
                 answer += max_d.first;
-
 #if DEBUG
                 cout << "row: " << i + 1 << " col: " << max_d.second + 1 << " value: " << max_d.first << endl;
                 printMatrix(D);
@@ -121,84 +115,69 @@ T COI_3_7<T>::Start()
             }
         }
     }
-
     return answer;
 }
 
+
 template<typename T>
-T COI_3_7<T>::Update(int n, int m, vector<vector<T> > &D, vector<int> &N)
+void COI_3_7<T>::Update(std::size_t n, std::size_t m, std::vector<std::vector<T> > &D, std::vector<int> &N)
 {
+    if (D.size() != n || (n > 0 && D[0].size() != m) || N.size() != m)
+    {
+        throw std::invalid_argument("Invalid dimensions or sizes for D or N in Update");
+    }
+
     num_rows = n;
     num_cols = m;
-
     this->D = D;
-    this->N_max = N;
-
+    N_max = N;
+    used_rows.assign(n, false);
+    used_cols.assign(m, false);
     answer = T(0);
-
-    used_rows = vector<bool>(n, false);
-    used_cols = vector<bool>(m, false);
 }
 
 
 template<typename T>
 template<typename F>
-bool COI_3_7<T>::notNull(const vector<F>& v)
+bool COI_3_7<T>::notNull(const std::vector<F>& v) const noexcept
 {
-    int n = v.size();
-
-    for(int i = 0; i < n; i++)
-    {
-        if(v[i] > 0) return true;
-    }
-    return false;
+    return std::any_of(v.begin(), v.end(), [](const F& val) { return val > 0; });
 }
 
 
 template<typename T>
-bool COI_3_7<T>::isUsedRows()
+bool COI_3_7<T>::isUsedRows() const noexcept
 {
-    for(int i = 0; i < num_rows; i++)
-    {
-        if(!used_rows[i]) return false;
-    }
-    return true;
+    return std::all_of(used_rows.begin(), used_rows.end(), [](bool used) { return used; });
 }
 
 
 template<typename T>
-bool COI_3_7<T>::isUsedCols()
+bool COI_3_7<T>::isUsedCols() const noexcept
 {
-    for(int i = 0; i < num_cols; i++)
-    {
-        if(!used_cols[i]) return false;
-    }
-    return true;
+    return std::all_of(used_cols.begin(), used_cols.end(), [](bool used) { return used; });
 }
 
 
 template<typename T>
-void COI_3_7<T>::printMatrix(const vector<vector<T> > &matrix)
+void COI_3_7<T>::printMatrix(const std::vector<std::vector<T>>& matrix) const
 {
-    int n = matrix.size();
-    int m = matrix[0].size();
-
-    cout << endl;
-
-    for(int i = 0; i < n; i++)
+    std::cout << '\n';
+    for (std::size_t i = 0; i < matrix.size(); ++i)
     {
-        for(int j = 0; j < m; j++)
+        for (std::size_t j = 0; j < matrix[0].size(); ++j)
         {
-            if(used_cols[j] || used_rows[i])
-                cout << 0 << ' ';
-            else
-                cout << matrix[i][j] << ' ';
+            if (used_cols[j] || used_rows[i])
+            {
+                std::cout << 0 << ' ';
+            } else
+            {
+                std::cout << matrix[i][j] << ' ';
+            }
         }
-
-        cout << endl;
+        std::cout << '\n';
     }
-
-    cout << endl;
+    std::cout << '\n';
 }
 
 

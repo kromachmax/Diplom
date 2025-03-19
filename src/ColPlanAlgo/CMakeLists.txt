@@ -36,7 +36,7 @@ else()
             ${PROJECT_SOURCES}
         )
     endif()
-    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG=1)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG=0)
 endif()
 
 # Подключение библиотек, включая Charts
