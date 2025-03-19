@@ -20,6 +20,7 @@ set(PROJECT_SOURCES
         COI_3_7.hpp
         COI_3_9.hpp
         COI_3_6.hpp
+        AssignmentAlgo.hpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

@@ -49,6 +49,10 @@ int main(int argc, char *argv[])
 
     const int NUM_ITERATIONS = 100;
 
+    std::vector<int> matrixSizes; // Размеры матриц (n * m)
+    std::vector<double> answers_3_7;
+    std::vector<double> answers_3_9;
+
     for(int iter = 0; iter < NUM_ITERATIONS; iter++)
     {
         int n = sizeDist(gen);
@@ -89,6 +93,10 @@ int main(int argc, char *argv[])
         auto end_3_9 = high_resolution_clock::now();
         auto duration_3_9 = duration_cast<microseconds>(end_3_9 - start_3_9);
 
+        matrixSizes.push_back(n * m);
+        answers_3_7.push_back(answer_3_7);
+        answers_3_9.push_back(answer_3_9);
+
         std::cout << "\nIteration " << iter + 1 << ":" << std::endl;
         std::cout << "Matrix size: " << n << " x " << m << std::endl;
         std::cout << "COI_3_7 Answer: " << answer_3_7 << ", Time: " << duration_3_7.count() << " microseconds" << std::endl;
@@ -96,61 +104,52 @@ int main(int argc, char *argv[])
     }
 
 
-//    // Создание серий данных
-//    QLineSeries *series1 = new QLineSeries();
-//    series1->setName("Dataset 1");
-//    series1->append(0, 1);
-//    series1->append(1, 2);
-//    series1->append(2, 3);
-//    series1->append(3, 2);
-//    series1->append(4, 5);
+    QLineSeries *series_3_7 = new QLineSeries();
+    series_3_7->setName("COI_3_7 Answers");
+    QLineSeries *series_3_9 = new QLineSeries();
+    series_3_9->setName("COI_3_9 Answers");
 
-//    QLineSeries *series2 = new QLineSeries();
-//    series2->setName("Dataset 2");
-//    series2->append(0, 0);
-//    series2->append(1, 1);
-//    series2->append(2, 2);
-//    series2->append(3, 4);
-//    series2->append(4, 3);
+    for (size_t i = 0; i < matrixSizes.size(); ++i)
+    {
+        series_3_7->append(matrixSizes[i], answers_3_7[i]);
+        series_3_9->append(matrixSizes[i], answers_3_9[i]);
+    }
 
-//    // Создание объекта графика
-//    QChart *chart = new QChart();
-//    chart->addSeries(series1); // Добавление первой серии
-//    chart->addSeries(series2); // Добавление второй серии
-//    chart->setTitle("Example Line Chart");
-//    chart->legend()->setAlignment(Qt::AlignBottom);
+    QChart *chart = new QChart();
+    chart->addSeries(series_3_7);
+    chart->addSeries(series_3_9);
+    chart->setTitle("Answers vs Matrix Size");
+    chart->legend()->setAlignment(Qt::AlignBottom);
 
-//    // Настройка осей
-//    QValueAxis *axisX = new QValueAxis();
-//    axisX->setTitleText("X Axis");
-//    axisX->setRange(0, 4);
-//    axisX->setLabelFormat("%.0f");
 
-//    QValueAxis *axisY = new QValueAxis();
-//    axisY->setTitleText("Y Axis");
-//    axisY->setRange(0, 6);
-//    axisY->setLabelFormat("%.0f");
+    QValueAxis *axisX = new QValueAxis();
+    axisX->setTitleText("Matrix Size (n * m)");
+    axisX->setRange(0, 2500);
+    axisX->setLabelFormat("%.0f");
 
-//    // Добавление осей к графику
-//    chart->addAxis(axisX, Qt::AlignBottom); // Ось X внизу
-//    chart->addAxis(axisY, Qt::AlignLeft);   // Ось Y слева
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Answer Value");
+    axisY->setRange(0, 500);
+    axisY->setLabelFormat("%.0f");
 
-//    // Привязка осей к сериям
-//    series1->attachAxis(axisX);
-//    series1->attachAxis(axisY);
-//    series2->attachAxis(axisX);
-//    series2->attachAxis(axisY);
+    chart->addAxis(axisX, Qt::AlignBottom);
+    chart->addAxis(axisY, Qt::AlignLeft);
 
-//    // Создание представления графика
-//    QChartView *chartView = new QChartView(chart);
-//    chartView->setRenderHint(QPainter::Antialiasing);
+    series_3_7->attachAxis(axisX);
+    series_3_7->attachAxis(axisY);
+    series_3_9->attachAxis(axisX);
+    series_3_9->attachAxis(axisY);
 
-//    // Настройка окна
-//    QMainWindow window;
-//    window.setCentralWidget(chartView);
-//    window.resize(800, 600);
-//    window.setWindowTitle("Qt Chart Example");
-//    window.show();
+    QChartView *chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+
+    QMainWindow window;
+    window.setCentralWidget(chartView);
+    window.resize(800, 600);
+    window.setWindowTitle("Answers vs Matrix Size");
+    window.show();
 
     return app.exec();
 }
+
+
