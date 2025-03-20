@@ -1,6 +1,11 @@
 #ifndef COI_3_6_HPP
 #define COI_3_6_HPP
 
+#include <iostream>
+#include <vector>
+#include <string>
+#include <stdlib.h>
+
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -51,6 +56,13 @@ COI_3_6<T>::COI_3_6(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D
 template<typename T>
 T COI_3_6<T>::Start()
 {
+
+    std::vector<int> initial_plan;
+
+    for(std::size_t i = 0; i < std::min(num_rows, num_cols); i++)
+    {
+    }
+
 
     return answer;
 }
