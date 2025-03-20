@@ -7,6 +7,9 @@
 #include <vector>
 #include <random>
 #include <chrono>
+#include <ranges>
+#include <algorithm>
+
 #include "COI_3_7.hpp"
 #include "COI_3_9.hpp"
 
@@ -48,7 +51,7 @@ int main(int argc, char *argv[])
     std::uniform_real_distribution<> valueDist(0.0, 23.0);
     std::uniform_int_distribution<> nDist(1, 10);
 
-    const int NUM_ITERATIONS = 1000;
+    const int NUM_ITERATIONS =500;
 
     std::vector<int> matrixSizes; // Размеры матриц (n * m)
     std::vector<double> answers_3_7;
@@ -140,6 +143,11 @@ int main(int argc, char *argv[])
         }
     }
 
+    auto max_time_3_7 = *std::ranges::max_element(times_3_7);
+    auto max_time_3_9 = *std::ranges::max_element(times_3_9);
+    auto max_diff =     *std::max_element(answer_diffs.begin(), answer_diffs.end(),
+                                          [](int a, int b) { return std::abs(a) < std::abs(b); });
+
 
     QLineSeries *series_time_3_7 = new QLineSeries();
     series_time_3_7->setName("COI_3_7 Time");
@@ -165,7 +173,7 @@ int main(int argc, char *argv[])
 
     QValueAxis *axisY_time = new QValueAxis();
     axisY_time->setTitleText("Time (microseconds)");
-    axisY_time->setRange(0, 50000);
+    axisY_time->setRange(0, std::max(max_time_3_7, max_time_3_9));
     axisY_time->setLabelFormat("%.0f");
 
     chart_time->addAxis(axisX_time, Qt::AlignBottom);
@@ -205,7 +213,7 @@ int main(int argc, char *argv[])
 
     QValueAxis *axisY_diff = new QValueAxis();
     axisY_diff->setTitleText("Answer Difference");
-    axisY_diff->setRange(-100, 100);
+    axisY_diff->setRange(-max_diff, max_diff);
     axisY_diff->setLabelFormat("%.0f");
 
     chart_diff->addAxis(axisX_diff, Qt::AlignBottom);

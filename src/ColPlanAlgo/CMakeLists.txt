@@ -8,7 +8,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Поиск Qt с модулем Charts
@@ -21,6 +21,7 @@ set(PROJECT_SOURCES
         COI_3_9.hpp
         COI_3_6.hpp
         COI_3_4.hpp
+        COI_3_3.hpp
         AssignmentAlgo.hpp
 )
 

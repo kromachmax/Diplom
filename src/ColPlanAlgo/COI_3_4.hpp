@@ -240,29 +240,61 @@ bool COI_3_6<T>::Step_3_4()
 template<typename T>
 bool COI_3_6<T>::Step_5_6()
 {
-    std::multimap<T, std::pair<std::size_t, std::size_t>> swap_pairs;
-
-    for(auto& first_value : distribution_plan)
+    while(true)
     {
-        T delta = T(0);
-        std::size_t row_fi = first_value.first;
-        std::size_t col_fi = first_value.second;
+        std::map<std::size_t, std::set<std::pair<T, std::size_t>>> swap_pairs;
 
-        for(auto& second_value : distribution_plan)
+        for(auto& first_value : distribution_plan)
         {
-            std::size_t row_se = seconf_value.first;
-            std::size_t col_se = second_value.second;
+            T delta = T(0);
+            std::size_t row_fi = first_value.first;
+            std::size_t col_fi = first_value.second;
 
-            if(row_se != row_fi)
+            for(auto& second_value : distribution_plan)
             {
-                delta = D[row_fi][col_fi] + D[row_se][col_se] - D[row_fi][col_se];
+                std::size_t row_se = seconf_value.first;
+                std::size_t col_se = second_value.second;
 
-                if(delta < 0)
-                    swap_pairs.insert(delta, {row_fi, row_se});
+                if(row_se != row_fi)
+                {
+                    delta = D[row_fi][col_fi] + D[row_se][col_se] - D[row_fi][col_se];
+
+                    if(delta < 0)
+                        swap_pairs[row_fi].insert({delta, row_se});
+                }
             }
         }
-    }
 
+        if(!swap_pairs.size())
+            return true;
+
+
+        T Y = T(0);
+        std::size_t start_robot = swap_pairs.begin()->first;
+        std::size_t current_robot = start_robot;
+        std::size_t end_robot = -1;
+
+        std::map<std::size_t, std::size_t> new_distribution_plan = distribution_plan;
+
+        while(start_robot != end_robot)
+        {
+            std::size_t old_row  = current_robot;
+            std::size_t old_col  = distribution_planp[old_row];
+            std::size_t new_row  = swap_pairs[old_row].begin()->first;
+            std::size_t new_col  = distribution_plan[new_row];
+
+            Y += D[old_row][old_col] - T[new_row][new_col];
+            new_distribution_plan[old_row] = new_row;
+
+            current_robot = new_row;
+        }
+
+        if(-Y > 0)
+        {
+            distribution_plan = new_distribution_plan;
+            continue;
+        }
+    }
 }
 
 
