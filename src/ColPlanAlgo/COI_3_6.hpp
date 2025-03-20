@@ -6,9 +6,6 @@
 #include <string>
 #include <stdlib.h>
 
-#ifndef DEBUG
-#define DEBUG 0
-#endif
 
 #define eps 1e-3
 

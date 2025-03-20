@@ -6,11 +6,7 @@
 #include <string>
 #include <stdlib.h>
 
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-
-#define eps 1e-3
+#define eps 1e-5
 
 template <typename T>
 class COI_3_7
@@ -56,6 +52,12 @@ COI_3_7<T>::COI_3_7(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D
 template<typename T>
 T COI_3_7<T>::Start()
 {
+    for(std::size_t i = 0; i < N_max.size(); i++)
+    {
+        if(!N_max[i])
+            used_cols[i] = true;
+    }
+
     while(notNull(N_max) && !isUsedRows())
     {
         for(std::size_t i = 0; i < num_rows; i++)
@@ -83,13 +85,6 @@ T COI_3_7<T>::Start()
                 {
                     if(D[j][max_d.second] > max_d.first)
                     {
-                        is_optimal = false;
-                        break;
-                    }
-                    else if(abs(D[j][max_d.second] - max_d.first) < eps)
-                    {
-                        if(j > i) continue;
-
                         is_optimal = false;
                         break;
                     }

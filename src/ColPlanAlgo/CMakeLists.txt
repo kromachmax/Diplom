@@ -39,7 +39,14 @@ else()
             ${PROJECT_SOURCES}
         )
     endif()
-    target_compile_definitions(${PROJECT_NAME} PRIVATE DEBUG=0)
+endif()
+
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    # Добавляем определение DEBUG
+    add_definitions(-DDEBUG)
+else()
+    # Убираем определение DEBUG для других конфигураций (например, Release)
+    remove_definitions(-DDEBUG)
 endif()
 
 # Подключение библиотек, включая Charts

@@ -10,10 +10,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-
 #define eps 1e-3
 
 template <typename T>

@@ -9,11 +9,7 @@
 #include <tuple>
 #include <cstddef>
 
-#ifndef DEBUG
-#define DEBUG 0
-#endif
-
-#define eps 1e-3
+#define eps 1e-5
 
 template <typename T>
 class COI_3_9
@@ -59,6 +55,12 @@ COI_3_9<T>::COI_3_9(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D
 template<typename T>
 T COI_3_9<T>::Start()
 {
+    for(std::size_t i = 0; i < N_max.size(); i++)
+    {
+        if(!N_max[i])
+            used_cols[i] = true;
+    }
+
     while(notNull(N_max) && !isUsedRows())
     {
         std::vector<std::pair<T, std::size_t>> first_max(num_rows, {T(0), 0});
