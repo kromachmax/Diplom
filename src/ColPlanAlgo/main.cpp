@@ -2,7 +2,9 @@
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
+#include <QtCharts/QLogValueAxis>
 #include <QMainWindow>
+#include <QDebug>
 #include <iostream>
 #include <vector>
 #include <random>
@@ -12,34 +14,16 @@
 
 #include "COI_3_7.hpp"
 #include "COI_3_9.hpp"
+#include "COI_3_1.hpp"
+#include "solving_LP.hpp"
+#include "HungarianAlgo.hpp"
 
+#define LINEAR
 
 QT_CHARTS_USE_NAMESPACE
 using namespace std;
 using namespace std::chrono;
 
-//15.1801 19.9286 11.4982 13.1915 12.1426 15.2867 8.46667 21.214 1.68299 0.364091 0.773497 1.15186 11.3952 10.1304 12.2005 8.42385 2.74773 4.85009 21.0053 11.308
-//16.5437 1.03732 5.34964 7.53279 2.34668 15.0859 9.62777 0.607328 0.489124 22.116 21.4557 3.4701 2.78653 18.1885 13.3989 7.27855 8.11205 5.81433 2.16527 1.57359
-//4.75808 17.1115 3.94969 7.51811 12.6807 15.0594 20.1541 6.25476 4.41528 22.81 17.1251 15.9022 19.5629 16.9879 1.08951 3.36232 9.34335 3.34572 0.59654 5.71244
-//17.9353 9.63706 12.8318 17.8462 17.9507 0.098002 0.0513347 6.38559 15.7037 16.5146 16.6449 12.1591 6.94461 15.2575 18.7072 13.2817 11.1944 16.6836 10.3776 22.5375
-//15.6888 19.5776 16.2175 14.6868 8.68653 10.8959 0.328971 14.1583 1.33668 11.8117 3.21393 10.516 16.1077 22.9917 3.97456 18.954 18.94 2.07398 15.9448 17.9719
-//17.1891 11.8002 22.7068 22.04 19.0636 9.49567 9.95297 16.5755 11.8217 12.0727 5.64711 22.2533 3.10236 15.331 3.81129 12.4413 19.1195 19.989 7.5649 12.5414
-//18.3834 20.5539 20.3642 4.92147 5.05474 6.31747 0.8708 1.98804 6.32832 22.1166 2.84343 19.8095 16.6949 11.2806 13.8324 12.157 2.70123 22.0499 5.54039 21.7709
-//6.88556 17.7856 1.73327 14.047 1.75774 18.6697 7.20842 9.46635 18.0649 2.88611 14.0414 9.8703 15.2815 8.60941 1.74551 4.7611 13.8784 18.9636 1.72264 2.54564
-//10.7627 15.9396 7.09377 18.4165 14.6324 11.7605 14.9188 18.9238 14.3706 19.0316 10.1316 18.8758 20.1784 15.2121 18.2502 19.8991 4.1647 11.8264 10.9135 5.94409
-//11.9211 12.8016 5.13036 20.0261 11.3233 20.0223 7.05673 12.348 3.96981 1.94757 5.68523 22.8642 21.8152 11.3541 16.575 15.2513 3.4442 9.26815 7.22158 8.67424
-//19.7987 9.17116 16.8526 17.3613 7.05938 12.196 9.51671 6.3265 15.7774 10.0339 0.317228 12.4463 11.5054 14.8396 9.70581 19.7801 5.78476 4.02777 15.9784 15.6436
-//4.39874 1.32707 22.4874 9.27689 5.27578 12.9278 5.04808 2.95551 22.3304 19.9615 7.80792 22.5488 19.298 16.9311 11.4664 15.114 22.9144 18.7324 8.2234 2.58047
-//2.37104 7.18611 8.08515 10.6044 0.0486703 5.99501 0.440989 11.7495 17.4392 3.62116 10.7906 15.6547 0.296711 4.94994 5.81303 12.0724 21.1077 3.68174 4.57493 5.57661
-//0.622851 7.92945 2.78731 0.0404399 8.57427 15.4532 11.7417 7.33581 22.5905 17.7625 8.08657 11.9633 21.0613 14.4158 15.1637 5.16834 1.32441 10.5803 12.0048 8.56175
-//3.27876 18.6021 5.07024 9.69528 12.4266 7.24204 7.25204 14.3215 10.3726 15.5863 15.9929 8.01816 19.8428 14.9775 15.5666 21.9894 6.18827 12.2304 22.9939 13.7633
-//18.1102 3.66755 7.8907 18.6532 8.03767 19.3568 8.63718 6.08272 14.094 7.28613 4.18651 9.05489 13.3289 6.21469 5.63247 20.9734 1.55784 15.1215 0.734673 19.4366
-//12.6251 8.00475 3.69809 2.94251 5.12712 5.96226 19.0847 14.134 1.62413 0.818601 17.3563 11.6716 6.78229 19.2528 14.238 11.6016 1.58897 6.89929 19.6904 1.77229
-//8.14988 15.4947 21.4047 2.4966 13.6387 16.257 22.7702 0.181731 1.32224 21.7904 20.2104 14.4193 6.40159 3.22728 0.544135 20.0256 14.1866 3.74397 18.7672 19.9035
-//10.2284 0.989243 12.1818 8.23055 19.8572 5.13508 22.9411 7.88469 5.77655 7.34341 19.7221 13.5145 4.09324 11.1619 17.9688 7.76687 17.9095 4.35251 7.17841 17.8747
-//11.3984 11.6139 6.69259 10.6757 8.80724 6.44855 4.63459 2.52142 10.9388 5.16773 14.8764 12.863 3.9465 19.4162 12.3623 13.3606 20.8456 8.98278 8.10143 14.8737
-
-//10 10 4 7 8 8 3 5 3 2 1 10 9 7 10 8 3 7 5 1
 
 int main(int argc, char *argv[])
 {
@@ -48,17 +32,39 @@ int main(int argc, char *argv[])
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    std::uniform_real_distribution<> valueDist(0.0, 23.0);
-    std::uniform_int_distribution<> nDist(1, 10);
+    std::uniform_real_distribution<> valueDist(1.0, 23.0);
+    std::uniform_int_distribution<> nDist(1, 1);
 
-    const int NUM_ITERATIONS =500;
+    const int NUM_ITERATIONS = 100;
+
+    //// ==================================================================
 
     std::vector<int> matrixSizes; // Размеры матриц (n * m)
+
+    std::vector<double> answers_hunAlgo;
+    std::vector<double> answers_lpAlgo;
+#ifdef COI_3_1
+    std::vector<double> answers_3_1;
+#endif
     std::vector<double> answers_3_7;
     std::vector<double> answers_3_9;
-    std::vector<long long> times_3_7; // Время выполнения COI_3_7
-    std::vector<long long> times_3_9; // Время выполнения COI_3_9
-    std::vector<double> answer_diffs; // Разница решений (answer_3_9 - answer_3_7)
+
+
+    std::vector<long long> times_hunAlgo;
+    std::vector<long long> times_lpAlgo;
+#ifdef COI_3_1
+    std::vector<long long> times_3_1;  // Время выполнения COI_3_1
+#endif
+    std::vector<long long> times_3_7;  // Время выполнения COI_3_7
+    std::vector<long long> times_3_9;  // Время выполнения COI_3_9
+
+    std::vector<double> answer_diffs_1;  // Разница решений (answer_3_9 - answer_3_7)
+#ifdef COI_3_1
+    std::vector<double> answer_diffs_2; // Разница решений (answer_3_1 - answer_3_9)
+#endif
+    std::vector<double> answer_diffs_3; // Разница решений (answer_LP - answer_3_9)
+
+    //// ==================================================================
 
     for(int iter = 0; iter < NUM_ITERATIONS; iter++)
     {
@@ -102,6 +108,40 @@ int main(int argc, char *argv[])
 
         try
         {
+            //// ==================================================================
+
+            auto start_LP = high_resolution_clock::now();
+
+            double answer_LP = solveAssignmentProblem_LP(D);
+
+            auto end_LP = high_resolution_clock::now();
+            auto duration_LP = duration_cast<microseconds>(end_LP - start_LP);
+
+            //// ==================================================================
+
+            auto start_hunAlgo = high_resolution_clock::now();
+
+            HungarionAlgo<double> hunAlgo;
+            hunAlgo.Update(n, m, D, N);
+            double answer_hunAlgo = hunAlgo.Start();
+
+            auto end_hunAlgo = high_resolution_clock::now();
+            auto duration_hunAlgo = duration_cast<microseconds>(end_hunAlgo - start_hunAlgo);
+
+            //// ==================================================================
+#ifdef COI_3_1
+            auto start_3_1 = high_resolution_clock::now();
+
+            COI_3_1<double> coi_3_1;
+            coi_3_1.Update(n, m, D, N);
+            double answer_3_1 = coi_3_1.Start();
+
+            auto end_3_1 = high_resolution_clock::now();
+            auto duration_3_1 = duration_cast<microseconds>(end_3_1 - start_3_1);
+#endif
+
+            //// ==================================================================
+
             auto start_3_7 = high_resolution_clock::now();
 
             COI_3_7<double> coi_3_7;
@@ -110,6 +150,8 @@ int main(int argc, char *argv[])
 
             auto end_3_7 = high_resolution_clock::now();
             auto duration_3_7 = duration_cast<microseconds>(end_3_7 - start_3_7);
+
+            //// ==================================================================
 
             auto start_3_9 = high_resolution_clock::now();
 
@@ -120,21 +162,45 @@ int main(int argc, char *argv[])
             auto end_3_9 = high_resolution_clock::now();
             auto duration_3_9 = duration_cast<microseconds>(end_3_9 - start_3_9);
 
+            //// ==================================================================
 
             matrixSizes.push_back(n);
+
+            answers_hunAlgo.push_back(answer_hunAlgo);
+            answers_lpAlgo.push_back(answer_LP);
+#ifdef COI_3_1
+            answers_3_1.push_back(answer_3_1);
+#endif
             answers_3_7.push_back(answer_3_7);
             answers_3_9.push_back(answer_3_9);
+
+
+
+            times_hunAlgo.push_back(duration_hunAlgo.count());
+            times_lpAlgo.push_back(duration_LP.count());
+#ifdef COI_3_1
+            times_3_1.push_back(duration_3_1.count());
+#endif
             times_3_7.push_back(duration_3_7.count());
             times_3_9.push_back(duration_3_9.count());
-            answer_diffs.push_back(answer_3_9 - answer_3_7);
 
+            answer_diffs_1.push_back(answer_3_9 - answer_3_7);
+#ifdef COI_3_1
+            answer_diffs_2.push_back(answer_3_1 - answer_3_9);
+#endif
+            answer_diffs_3.push_back(answer_LP - answer_3_9);
 
-#ifdef DEBUG
+            //// ==================================================================
+
             std::cout << "\nIteration " << iter + 1 << ":" << std::endl;
             std::cout << "Matrix size: " << n << " x " << m << std::endl;
+            std::cout << "LP_Answer: " << answer_LP <<  ", Time: " << duration_LP.count() << " microseconds" << std::endl;
+            std::cout << "Hungarian_Answer: " << answer_hunAlgo <<  ", Time: " << duration_hunAlgo.count() << " microseconds" << std::endl;
+#ifdef COI_3_1
+            std::cout << "COI_3_1 Answer: " << answer_3_1 << ", Time: " << duration_3_1.count() << " microseconds" << std::endl;
+#endif
             std::cout << "COI_3_7 Answer: " << answer_3_7 << ", Time: " << duration_3_7.count() << " microseconds" << std::endl;
             std::cout << "COI_3_9 Answer: " << answer_3_9 << ", Time: " << duration_3_9.count() << " microseconds" << std::endl;
-#endif
         }
         catch (const std::exception& e)
         {
@@ -143,26 +209,44 @@ int main(int argc, char *argv[])
         }
     }
 
+#ifdef COI_3_1
+    auto max_time_3_1 = *std::ranges::max_element(times_3_1);
+#endif
     auto max_time_3_7 = *std::ranges::max_element(times_3_7);
     auto max_time_3_9 = *std::ranges::max_element(times_3_9);
-    auto max_diff =     *std::max_element(answer_diffs.begin(), answer_diffs.end(),
-                                          [](int a, int b) { return std::abs(a) < std::abs(b); });
+    auto max_time_LP  = *std::ranges::max_element(times_lpAlgo);
+    auto max_time_hunAlgo = *std::ranges::max_element(times_hunAlgo);
+
+    auto max_diff_1 =     *std::max_element(answer_diffs_1.begin(), answer_diffs_1.end(),
+                                            [](double a, double b) { return std::abs(a) < std::abs(b); });
+#ifdef COI_3_1
+    auto max_diff_2 =     *std::max_element(answer_diffs_2.begin(), answer_diffs_2.end(),
+                                            [](double a, double b) { return std::abs(a) < std::abs(b); });
+#endif
+
+    auto max_diff_3 =     *std::max_element(answer_diffs_3.begin(), answer_diffs_3.end(),
+                                            [](double a, double b) { return std::abs(a) < std::abs(b); });
 
 
-    QLineSeries *series_time_3_7 = new QLineSeries();
-    series_time_3_7->setName("COI_3_7 Time");
-    QLineSeries *series_time_3_9 = new QLineSeries();
-    series_time_3_9->setName("COI_3_9 Time");
+    //// ============================================================================================================
+
+#ifdef RELEASE
+
+    QLineSeries *series_time_LP = new QLineSeries();
+    series_time_LP->setName("LP Time");
+    QLineSeries *series_time_hunAlgo = new QLineSeries();
+    series_time_hunAlgo->setName("HungarianAlgo Time");
 
     for (size_t i = 0; i < matrixSizes.size(); ++i)
     {
-        series_time_3_7->append(matrixSizes[i], times_3_7[i]);
-        series_time_3_9->append(matrixSizes[i], times_3_9[i]);
+        series_time_LP->append(matrixSizes[i], times_lpAlgo[i]);
+        series_time_hunAlgo->append(matrixSizes[i], times_hunAlgo[i]);
     }
 
     QChart *chart_time = new QChart();
-    chart_time->addSeries(series_time_3_7);
-    chart_time->addSeries(series_time_3_9);
+
+    chart_time->addSeries(series_time_LP);
+    chart_time->addSeries(series_time_hunAlgo);
     chart_time->setTitle("Execution Time vs Matrix Size");
     chart_time->legend()->setAlignment(Qt::AlignBottom);
 
@@ -171,18 +255,19 @@ int main(int argc, char *argv[])
     axisX_time->setRange(0, NUM_ITERATIONS);
     axisX_time->setLabelFormat("%.0f");
 
-    QValueAxis *axisY_time = new QValueAxis();
+    QLogValueAxis *axisY_time = new QLogValueAxis();
     axisY_time->setTitleText("Time (microseconds)");
-    axisY_time->setRange(0, std::max(max_time_3_7, max_time_3_9));
-    axisY_time->setLabelFormat("%.0f");
+    axisY_time->setBase(10); // Основание логарифма (10 или e)
+    axisY_time->setRange(0.01, std::max<long long>(max_time_hunAlgo, max_time_LP) );
+    axisY_time->setLabelFormat("%.0e"); // Формат: 1e+06, 1e+05, ... 1e+00
 
     chart_time->addAxis(axisX_time, Qt::AlignBottom);
     chart_time->addAxis(axisY_time, Qt::AlignLeft);
 
-    series_time_3_7->attachAxis(axisX_time);
-    series_time_3_7->attachAxis(axisY_time);
-    series_time_3_9->attachAxis(axisX_time);
-    series_time_3_9->attachAxis(axisY_time);
+    series_time_LP->attachAxis(axisX_time);
+    series_time_LP->attachAxis(axisY_time);
+    series_time_hunAlgo->attachAxis(axisX_time);
+    series_time_hunAlgo->attachAxis(axisY_time);
 
     QChartView *chartView_time = new QChartView(chart_time);
     chartView_time->setRenderHint(QPainter::Antialiasing);
@@ -193,43 +278,223 @@ int main(int argc, char *argv[])
     window_time.setWindowTitle("Execution Time vs Matrix Size");
     window_time.show();
 
-    QLineSeries *series_diff = new QLineSeries();
-    series_diff->setName("Answer Difference (COI_3_9 - COI_3_7)");
+
+    //// ============================================================================================================
+
+#endif
+
+#ifdef RELEASE
+
+    QLineSeries *series_time_hunAlgo_2 = new QLineSeries();
+    series_time_hunAlgo_2->setName("HungarianAlgo Time");
+#ifdef COI_3_1
+    QLineSeries *series_time_3_1 = new QLineSeries();
+    series_time_3_1->setName("COI_3_1 Time");
+#endif
+    QLineSeries *series_time_3_7 = new QLineSeries();
+    series_time_3_7->setName("COI_3_7 Time");
+    QLineSeries *series_time_3_9 = new QLineSeries();
+    series_time_3_9->setName("COI_3_9 Time");
 
     for (size_t i = 0; i < matrixSizes.size(); ++i)
     {
-        series_diff->append(matrixSizes[i], answer_diffs[i]);
+        series_time_hunAlgo_2->append(matrixSizes[i], times_hunAlgo[i]);
+#ifdef COI_3_1
+        series_time_3_1->append(matrixSizes[i], times_3_1[i]);
+#endif
+        series_time_3_7->append(matrixSizes[i], times_3_7[i]);
+        series_time_3_9->append(matrixSizes[i], times_3_9[i]);
     }
 
-    QChart *chart_diff = new QChart();
-    chart_diff->addSeries(series_diff);
-    chart_diff->setTitle("Answer Difference vs Matrix Size");
-    chart_diff->legend()->setAlignment(Qt::AlignBottom);
+    QChart *chart_time_2 = new QChart();
 
-    QValueAxis *axisX_diff = new QValueAxis();
-    axisX_diff->setTitleText("Matrix Size (n)");
-    axisX_diff->setRange(0, NUM_ITERATIONS);
-    axisX_diff->setLabelFormat("%.0f");
+    chart_time_2->addSeries(series_time_hunAlgo_2);
+#ifdef COI_3_1
+    chart_time->addSeries(series_time_3_1);
+#endif
+    chart_time_2->addSeries(series_time_3_7);
+    chart_time_2->addSeries(series_time_3_9);
+    chart_time_2->setTitle("Execution Time vs Matrix Size");
+    chart_time_2->legend()->setAlignment(Qt::AlignBottom);
 
-    QValueAxis *axisY_diff = new QValueAxis();
-    axisY_diff->setTitleText("Answer Difference");
-    axisY_diff->setRange(-max_diff, max_diff);
-    axisY_diff->setLabelFormat("%.0f");
+    QValueAxis *axisX_time_2 = new QValueAxis();
+    axisX_time_2->setTitleText("Matrix Size (n)");
+    axisX_time_2->setRange(0, NUM_ITERATIONS);
+    axisX_time_2->setLabelFormat("%.0f");
 
-    chart_diff->addAxis(axisX_diff, Qt::AlignBottom);
-    chart_diff->addAxis(axisY_diff, Qt::AlignLeft);
 
-    series_diff->attachAxis(axisX_diff);
-    series_diff->attachAxis(axisY_diff);
+#ifdef LINEAR
+    QValueAxis *axisY_time_2 = new QValueAxis();
+    axisY_time_2->setTitleText("Time (microseconds)");
+#ifdef COI_3_1
+    axisY_time->setRange( 0, std::max<long long>({max_time_3_7, max_time_3_9, max_time_hunAlgo, max_time_3_1}) );
+#else
+    axisY_time_2->setRange(0, std::max<long long>({max_time_3_7, max_time_3_9, max_time_hunAlgo}) );
+#endif
+#else
+    QLogValueAxis *axisY_time_2 = new QLogValueAxis();
+    axisY_time_2->setTitleText("Time (microseconds)");
+    axisY_time_2->setBase(2); // Основание логарифма (10 или e)
+#ifdef COI_3_1
+    axisY_time->setRange( 0, std::max<long long>({max_time_3_7, max_time_3_9, max_time_hunAlgo, max_time_3_1}) );
+#else
+    axisY_time_2->setRange(0.1, std::max<long long>({max_time_3_7, max_time_3_9, max_time_hunAlgo}) );
+#endif
+    axisY_time_2->setLabelFormat("%.0e"); // Формат: 1e+06, 1e+05, ... 1e+00
+#endif
 
-    QChartView *chartView_diff = new QChartView(chart_diff);
-    chartView_diff->setRenderHint(QPainter::Antialiasing);
+    chart_time_2->addAxis(axisX_time_2, Qt::AlignBottom);
+    chart_time_2->addAxis(axisY_time_2, Qt::AlignLeft);
 
-    QMainWindow window_diff;
-    window_diff.setCentralWidget(chartView_diff);
-    window_diff.resize(800, 600);
-    window_diff.setWindowTitle("Answer Difference vs Matrix Size");
-    window_diff.show();
+    series_time_hunAlgo_2->attachAxis(axisX_time_2);
+    series_time_hunAlgo_2->attachAxis(axisY_time_2);
+#ifdef COI_3_1
+    series_time_3_1->attachAxis(axisX_time);
+    series_time_3_1->attachAxis(axisY_time);
+#endif
+    series_time_3_7->attachAxis(axisX_time_2);
+    series_time_3_7->attachAxis(axisY_time_2);
+    series_time_3_9->attachAxis(axisX_time_2);
+    series_time_3_9->attachAxis(axisY_time_2);
+
+    QChartView *chartView_time_2 = new QChartView(chart_time_2);
+    chartView_time_2->setRenderHint(QPainter::Antialiasing);
+
+    QMainWindow window_time_2;
+    window_time_2.setCentralWidget(chartView_time_2);
+    window_time_2.resize(800, 600);
+    window_time_2.setWindowTitle("Execution Time vs Matrix Size");
+    window_time_2.show();
+
+
+    //// ============================================================================================================
+
+
+    QLineSeries *series_diff_1 = new QLineSeries();
+    series_diff_1->setName("Answer Difference (COI_3_9 - COI_3_7)");
+
+    for (size_t i = 0; i < matrixSizes.size(); ++i)
+    {
+        series_diff_1->append(matrixSizes[i], answer_diffs_1[i]);
+    }
+
+    QChart *chart_diff_1 = new QChart();
+    chart_diff_1->addSeries(series_diff_1);
+    chart_diff_1->setTitle("Answer Difference vs Matrix Size");
+    chart_diff_1->legend()->setAlignment(Qt::AlignBottom);
+
+    QValueAxis *axisX_diff_1 = new QValueAxis();
+    axisX_diff_1->setTitleText("Matrix Size (n)");
+    axisX_diff_1->setRange(0, NUM_ITERATIONS);
+    axisX_diff_1->setLabelFormat("%.0f");
+
+    QValueAxis *axisY_diff_1 = new QValueAxis();
+    axisY_diff_1->setTitleText("Answer Difference");
+    axisY_diff_1->setRange(-max_diff_1, max_diff_1);
+    axisY_diff_1->setLabelFormat("%.0f");
+
+    chart_diff_1->addAxis(axisX_diff_1, Qt::AlignBottom);
+    chart_diff_1->addAxis(axisY_diff_1, Qt::AlignLeft);
+
+    series_diff_1->attachAxis(axisX_diff_1);
+    series_diff_1->attachAxis(axisY_diff_1);
+
+    QChartView *chartView_diff_1 = new QChartView(chart_diff_1);
+    chartView_diff_1->setRenderHint(QPainter::Antialiasing);
+
+    QMainWindow window_diff_1;
+    window_diff_1.setCentralWidget(chartView_diff_1);
+    window_diff_1.resize(800, 600);
+    window_diff_1.setWindowTitle("Answer Difference vs Matrix Size");
+    window_diff_1.show();
+
+
+    //// ============================================================================================================
+
+#ifdef COI_3_1
+    QLineSeries *series_diff_2 = new QLineSeries();
+    series_diff_2->setName("Answer Difference (COI_3_1 - COI_3_9)");
+
+    for (size_t i = 0; i < matrixSizes.size(); ++i)
+    {
+        series_diff_2->append(matrixSizes[i], answer_diffs_2[i]);
+    }
+
+    QChart *chart_diff_2 = new QChart();
+    chart_diff_2->addSeries(series_diff_2);
+    chart_diff_2->setTitle("Answer Difference vs Matrix Size");
+    chart_diff_2->legend()->setAlignment(Qt::AlignBottom);
+
+    QValueAxis *axisX_diff_2 = new QValueAxis();
+    axisX_diff_2->setTitleText("Matrix Size (n)");
+    axisX_diff_2->setRange(0, NUM_ITERATIONS);
+    axisX_diff_2->setLabelFormat("%.0f");
+
+    QValueAxis *axisY_diff_2 = new QValueAxis();
+    axisY_diff_2->setTitleText("Answer Difference");
+    axisY_diff_2->setRange(-max_diff_2, max_diff_2);
+    axisY_diff_2->setLabelFormat("%.0f");
+
+    chart_diff_2->addAxis(axisX_diff_2, Qt::AlignBottom);
+    chart_diff_2->addAxis(axisY_diff_2, Qt::AlignLeft);
+
+    series_diff_2->attachAxis(axisX_diff_2);
+    series_diff_2->attachAxis(axisY_diff_2);
+
+    QChartView *chartView_diff_2 = new QChartView(chart_diff_2);
+    chartView_diff_2->setRenderHint(QPainter::Antialiasing);
+
+    QMainWindow window_diff_2;
+    window_diff_2.setCentralWidget(chartView_diff_2);
+    window_diff_2.resize(800, 600);
+    window_diff_2.setWindowTitle("Answer Difference vs Matrix Size");
+    window_diff_2.show();
+#endif
+
+
+    //// ============================================================================================================
+
+
+    QLineSeries *series_diff_3 = new QLineSeries();
+    series_diff_3->setName("Answer Difference (LP - COI_3_9)");
+
+    for (size_t i = 0; i < matrixSizes.size(); ++i)
+    {
+        series_diff_3->append(matrixSizes[i], answer_diffs_3[i]);
+    }
+
+    QChart *chart_diff_3 = new QChart();
+    chart_diff_3->addSeries(series_diff_3);
+    chart_diff_3->setTitle("Answer Difference vs Matrix Size");
+    chart_diff_3->legend()->setAlignment(Qt::AlignBottom);
+
+    QValueAxis *axisX_diff_3 = new QValueAxis();
+    axisX_diff_3->setTitleText("Matrix Size (n)");
+    axisX_diff_3->setRange(0, NUM_ITERATIONS);
+    axisX_diff_3->setLabelFormat("%.0f");
+
+    QValueAxis *axisY_diff_3 = new QValueAxis();
+    axisY_diff_3->setTitleText("Answer Difference");
+    axisY_diff_3->setRange(-max_diff_3, max_diff_3);
+    axisY_diff_3->setLabelFormat("%.0f");
+
+    chart_diff_3->addAxis(axisX_diff_3, Qt::AlignBottom);
+    chart_diff_3->addAxis(axisY_diff_3, Qt::AlignLeft);
+
+    series_diff_3->attachAxis(axisX_diff_3);
+    series_diff_3->attachAxis(axisY_diff_3);
+
+    QChartView *chartView_diff_3 = new QChartView(chart_diff_3);
+    chartView_diff_3->setRenderHint(QPainter::Antialiasing);
+
+    QMainWindow window_diff_3;
+    window_diff_3.setCentralWidget(chartView_diff_3);
+    window_diff_3.resize(800, 600);
+    window_diff_3.setWindowTitle("Answer Difference vs Matrix Size");
+    window_diff_3.show();
+
+
+#endif
 
     return app.exec();
 }

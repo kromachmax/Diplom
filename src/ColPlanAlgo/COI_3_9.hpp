@@ -9,7 +9,6 @@
 #include <tuple>
 #include <cstddef>
 
-#define eps 1e-5
 
 template <typename T>
 class COI_3_9
@@ -29,6 +28,9 @@ private:
     void printMatrix(const std::vector<std::vector<T>>& matrix) const;
 
 private:
+
+    const double eps = 1e-5;
+
     std::size_t num_rows = 0;
     std::size_t num_cols = 0;
 
