@@ -1,4 +1,4 @@
-#include <glpk.h>
+#include <glpk.h> //GLPK (GNU Linear Programming Kit).
 #include <iostream>
 #include <vector>
 

@@ -19,6 +19,7 @@
 #include "HungarianAlgo.hpp"
 
 #define LINEAR
+#define COI_3_1_def
 
 QT_CHARTS_USE_NAMESPACE
 using namespace std;
@@ -32,18 +33,18 @@ int main(int argc, char *argv[])
     std::random_device rd;
     std::mt19937 gen(rd());
 
-    std::uniform_real_distribution<> valueDist(1.0, 23.0);
+    std::uniform_int_distribution<> valueDist(1.0, 9.0);
     std::uniform_int_distribution<> nDist(1, 1);
 
-    const int NUM_ITERATIONS = 100;
+    const int NUM_ITERATIONS = 500;
 
     //// ==================================================================
 
     std::vector<int> matrixSizes; // Размеры матриц (n * m)
 
     std::vector<double> answers_hunAlgo;
-    std::vector<double> answers_lpAlgo;
-#ifdef COI_3_1
+    //std::vector<double> answers_lpAlgo;
+#ifdef COI_3_1_def
     std::vector<double> answers_3_1;
 #endif
     std::vector<double> answers_3_7;
@@ -51,24 +52,26 @@ int main(int argc, char *argv[])
 
 
     std::vector<long long> times_hunAlgo;
-    std::vector<long long> times_lpAlgo;
-#ifdef COI_3_1
+    //std::vector<long long> times_lpAlgo;
+#ifdef COI_3_1_def
     std::vector<long long> times_3_1;  // Время выполнения COI_3_1
 #endif
     std::vector<long long> times_3_7;  // Время выполнения COI_3_7
     std::vector<long long> times_3_9;  // Время выполнения COI_3_9
 
     std::vector<double> answer_diffs_1;  // Разница решений (answer_3_9 - answer_3_7)
-#ifdef COI_3_1
+#ifdef COI_3_1_def
     std::vector<double> answer_diffs_2; // Разница решений (answer_3_1 - answer_3_9)
 #endif
     std::vector<double> answer_diffs_3; // Разница решений (answer_LP - answer_3_9)
+    std::vector<double> answer_diffs_4; // Разница решений (answer_LP - answer_3_1)
 
     //// ==================================================================
 
-    for(int iter = 0; iter < NUM_ITERATIONS; iter++)
+    for(int iter = 2; iter < NUM_ITERATIONS; iter++)
     {
         int n = iter + 1;
+        //int n = 4;
         int m = n;
 
         std::vector<std::vector<double>> D(n, std::vector<double>(m));
@@ -79,6 +82,7 @@ int main(int argc, char *argv[])
             for (int j = 0; j < m; j++)
             {
                 D[i][j] = valueDist(gen);
+                //std::cin >> D[i][j];
             }
         }
 
@@ -99,23 +103,23 @@ int main(int argc, char *argv[])
         }
         std::cout << '\n';
 
-        for(std::size_t i = 0; i < N.size(); ++i)
-        {
-            std::cout << N[i] << ' ';
-        }
-        std::cout << '\n';
+//        for(std::size_t i = 0; i < N.size(); ++i)
+//        {
+//            std::cout << N[i] << ' ';
+//        }
+//        std::cout << '\n';
 #endif
 
         try
         {
             //// ==================================================================
 
-            auto start_LP = high_resolution_clock::now();
+//            auto start_LP = high_resolution_clock::now();
 
-            double answer_LP = solveAssignmentProblem_LP(D);
+//            double answer_LP = solveAssignmentProblem_LP(D);
 
-            auto end_LP = high_resolution_clock::now();
-            auto duration_LP = duration_cast<microseconds>(end_LP - start_LP);
+//            auto end_LP = high_resolution_clock::now();
+//            auto duration_LP = duration_cast<microseconds>(end_LP - start_LP);
 
             //// ==================================================================
 
@@ -129,12 +133,60 @@ int main(int argc, char *argv[])
             auto duration_hunAlgo = duration_cast<microseconds>(end_hunAlgo - start_hunAlgo);
 
             //// ==================================================================
-#ifdef COI_3_1
+#ifdef COI_3_1_def
             auto start_3_1 = high_resolution_clock::now();
 
             COI_3_1<double> coi_3_1;
             coi_3_1.Update(n, m, D, N);
             double answer_3_1 = coi_3_1.Start();
+
+#ifdef DEBUG
+            if(answer_3_1 != answer_hunAlgo)
+            {
+                std::cout << '\n';
+                for (std::size_t i = 0; i < D.size(); ++i)
+                {
+                    for (std::size_t j = 0; j < D[0].size(); ++j)
+                    {
+                        std::cout << D[i][j] << ' ';
+                    }
+                    std::cout << '\n';
+                }
+                std::cout << '\n';
+
+                int max_val = D[0][0];
+                for (std::size_t i = 0; i < D.size(); ++i)
+                {
+                    for (std::size_t j = 0; j < D[0].size(); ++j)
+                    {
+                        if (D[i][j] > max_val) {
+                            max_val = D[i][j];
+                        }
+                    }
+                }
+
+                for (std::size_t i = 0; i < D.size(); ++i)
+                {
+                    for (std::size_t j = 0; j < D[0].size(); ++j)
+                    {
+                        D[i][j] = max_val - D[i][j];
+                    }
+                }
+
+                std::cout << '\n';
+                for (std::size_t i = 0; i < D.size(); ++i)
+                {
+                    for (std::size_t j = 0; j < D[0].size(); ++j)
+                    {
+                        std::cout << D[i][j] << ' ';
+                    }
+                    std::cout << '\n';
+                }
+                std::cout << '\n';
+
+                return 1;
+            }
+#endif
 
             auto end_3_1 = high_resolution_clock::now();
             auto duration_3_1 = duration_cast<microseconds>(end_3_1 - start_3_1);
@@ -167,8 +219,8 @@ int main(int argc, char *argv[])
             matrixSizes.push_back(n);
 
             answers_hunAlgo.push_back(answer_hunAlgo);
-            answers_lpAlgo.push_back(answer_LP);
-#ifdef COI_3_1
+            //answers_lpAlgo.push_back(answer_LP);
+#ifdef COI_3_1_def
             answers_3_1.push_back(answer_3_1);
 #endif
             answers_3_7.push_back(answer_3_7);
@@ -177,26 +229,27 @@ int main(int argc, char *argv[])
 
 
             times_hunAlgo.push_back(duration_hunAlgo.count());
-            times_lpAlgo.push_back(duration_LP.count());
-#ifdef COI_3_1
+            //times_lpAlgo.push_back(duration_LP.count());
+#ifdef COI_3_1_def
             times_3_1.push_back(duration_3_1.count());
 #endif
             times_3_7.push_back(duration_3_7.count());
             times_3_9.push_back(duration_3_9.count());
 
             answer_diffs_1.push_back(answer_3_9 - answer_3_7);
-#ifdef COI_3_1
+#ifdef COI_3_1_def
             answer_diffs_2.push_back(answer_3_1 - answer_3_9);
 #endif
-            answer_diffs_3.push_back(answer_LP - answer_3_9);
+            answer_diffs_3.push_back(answer_hunAlgo - answer_3_9);
+            answer_diffs_4.push_back(answer_hunAlgo - answer_3_1);
 
             //// ==================================================================
 
             std::cout << "\nIteration " << iter + 1 << ":" << std::endl;
             std::cout << "Matrix size: " << n << " x " << m << std::endl;
-            std::cout << "LP_Answer: " << answer_LP <<  ", Time: " << duration_LP.count() << " microseconds" << std::endl;
+            //std::cout << "LP_Answer: " << answer_LP <<  ", Time: " << duration_LP.count() << " microseconds" << std::endl;
             std::cout << "Hungarian_Answer: " << answer_hunAlgo <<  ", Time: " << duration_hunAlgo.count() << " microseconds" << std::endl;
-#ifdef COI_3_1
+#ifdef COI_3_1_def
             std::cout << "COI_3_1 Answer: " << answer_3_1 << ", Time: " << duration_3_1.count() << " microseconds" << std::endl;
 #endif
             std::cout << "COI_3_7 Answer: " << answer_3_7 << ", Time: " << duration_3_7.count() << " microseconds" << std::endl;
@@ -209,22 +262,25 @@ int main(int argc, char *argv[])
         }
     }
 
-#ifdef COI_3_1
+#ifdef COI_3_1_def
     auto max_time_3_1 = *std::ranges::max_element(times_3_1);
 #endif
     auto max_time_3_7 = *std::ranges::max_element(times_3_7);
     auto max_time_3_9 = *std::ranges::max_element(times_3_9);
-    auto max_time_LP  = *std::ranges::max_element(times_lpAlgo);
+    //auto max_time_LP  = *std::ranges::max_element(times_lpAlgo);
     auto max_time_hunAlgo = *std::ranges::max_element(times_hunAlgo);
 
     auto max_diff_1 =     *std::max_element(answer_diffs_1.begin(), answer_diffs_1.end(),
                                             [](double a, double b) { return std::abs(a) < std::abs(b); });
-#ifdef COI_3_1
+#ifdef COI_3_1_def
     auto max_diff_2 =     *std::max_element(answer_diffs_2.begin(), answer_diffs_2.end(),
                                             [](double a, double b) { return std::abs(a) < std::abs(b); });
 #endif
 
     auto max_diff_3 =     *std::max_element(answer_diffs_3.begin(), answer_diffs_3.end(),
+                                            [](double a, double b) { return std::abs(a) < std::abs(b); });
+
+    auto max_diff_4 =     *std::max_element(answer_diffs_4.begin(), answer_diffs_4.end(),
                                             [](double a, double b) { return std::abs(a) < std::abs(b); });
 
 
@@ -239,7 +295,7 @@ int main(int argc, char *argv[])
 
     for (size_t i = 0; i < matrixSizes.size(); ++i)
     {
-        series_time_LP->append(matrixSizes[i], times_lpAlgo[i]);
+        //series_time_LP->append(matrixSizes[i], times_lpAlgo[i]);
         series_time_hunAlgo->append(matrixSizes[i], times_hunAlgo[i]);
     }
 
@@ -258,7 +314,9 @@ int main(int argc, char *argv[])
     QLogValueAxis *axisY_time = new QLogValueAxis();
     axisY_time->setTitleText("Time (microseconds)");
     axisY_time->setBase(10); // Основание логарифма (10 или e)
-    axisY_time->setRange(0.01, std::max<long long>(max_time_hunAlgo, max_time_LP) );
+    //axisY_time->setRange(0.01, std::max<long long>(max_time_hunAlgo, max_time_LP) );
+
+    axisY_time->setRange(0.01, std::max<long long>(max_time_hunAlgo, 0) );
     axisY_time->setLabelFormat("%.0e"); // Формат: 1e+06, 1e+05, ... 1e+00
 
     chart_time->addAxis(axisX_time, Qt::AlignBottom);
@@ -287,7 +345,7 @@ int main(int argc, char *argv[])
 
     QLineSeries *series_time_hunAlgo_2 = new QLineSeries();
     series_time_hunAlgo_2->setName("HungarianAlgo Time");
-#ifdef COI_3_1
+#ifdef COI_3_1_def
     QLineSeries *series_time_3_1 = new QLineSeries();
     series_time_3_1->setName("COI_3_1 Time");
 #endif
@@ -299,7 +357,7 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < matrixSizes.size(); ++i)
     {
         series_time_hunAlgo_2->append(matrixSizes[i], times_hunAlgo[i]);
-#ifdef COI_3_1
+#ifdef COI_3_1_def
         series_time_3_1->append(matrixSizes[i], times_3_1[i]);
 #endif
         series_time_3_7->append(matrixSizes[i], times_3_7[i]);
@@ -309,7 +367,7 @@ int main(int argc, char *argv[])
     QChart *chart_time_2 = new QChart();
 
     chart_time_2->addSeries(series_time_hunAlgo_2);
-#ifdef COI_3_1
+#ifdef COI_3_1_def
     chart_time->addSeries(series_time_3_1);
 #endif
     chart_time_2->addSeries(series_time_3_7);
@@ -326,7 +384,7 @@ int main(int argc, char *argv[])
 #ifdef LINEAR
     QValueAxis *axisY_time_2 = new QValueAxis();
     axisY_time_2->setTitleText("Time (microseconds)");
-#ifdef COI_3_1
+#ifdef COI_3_1_def
     axisY_time->setRange( 0, std::max<long long>({max_time_3_7, max_time_3_9, max_time_hunAlgo, max_time_3_1}) );
 #else
     axisY_time_2->setRange(0, std::max<long long>({max_time_3_7, max_time_3_9, max_time_hunAlgo}) );
@@ -335,7 +393,7 @@ int main(int argc, char *argv[])
     QLogValueAxis *axisY_time_2 = new QLogValueAxis();
     axisY_time_2->setTitleText("Time (microseconds)");
     axisY_time_2->setBase(2); // Основание логарифма (10 или e)
-#ifdef COI_3_1
+#ifdef COI_3_1_def
     axisY_time->setRange( 0, std::max<long long>({max_time_3_7, max_time_3_9, max_time_hunAlgo, max_time_3_1}) );
 #else
     axisY_time_2->setRange(0.1, std::max<long long>({max_time_3_7, max_time_3_9, max_time_hunAlgo}) );
@@ -348,7 +406,7 @@ int main(int argc, char *argv[])
 
     series_time_hunAlgo_2->attachAxis(axisX_time_2);
     series_time_hunAlgo_2->attachAxis(axisY_time_2);
-#ifdef COI_3_1
+#ifdef COI_3_1_def
     series_time_3_1->attachAxis(axisX_time);
     series_time_3_1->attachAxis(axisY_time);
 #endif
@@ -411,7 +469,7 @@ int main(int argc, char *argv[])
 
     //// ============================================================================================================
 
-#ifdef COI_3_1
+#ifdef COI_3_1_def
     QLineSeries *series_diff_2 = new QLineSeries();
     series_diff_2->setName("Answer Difference (COI_3_1 - COI_3_9)");
 
@@ -492,6 +550,47 @@ int main(int argc, char *argv[])
     window_diff_3.resize(800, 600);
     window_diff_3.setWindowTitle("Answer Difference vs Matrix Size");
     window_diff_3.show();
+
+    //// ============================================================================================================
+
+
+    QLineSeries *series_diff_4 = new QLineSeries();
+    series_diff_4->setName("Answer Difference (LP - COI_3_1)");
+
+    for (size_t i = 0; i < matrixSizes.size(); ++i)
+    {
+        series_diff_4->append(matrixSizes[i], answer_diffs_4[i]);
+    }
+
+    QChart *chart_diff_4 = new QChart();
+    chart_diff_4->addSeries(series_diff_4);
+    chart_diff_4->setTitle("Answer Difference vs Matrix Size");
+    chart_diff_4->legend()->setAlignment(Qt::AlignBottom);
+
+    QValueAxis *axisX_diff_4 = new QValueAxis();
+    axisX_diff_4->setTitleText("Matrix Size (n)");
+    axisX_diff_4->setRange(0, NUM_ITERATIONS);
+    axisX_diff_4->setLabelFormat("%.0f");
+
+    QValueAxis *axisY_diff_4 = new QValueAxis();
+    axisY_diff_4->setTitleText("Answer Difference");
+    axisY_diff_4->setRange(-max_diff_4, max_diff_4);
+    axisY_diff_4->setLabelFormat("%.0f");
+
+    chart_diff_4->addAxis(axisX_diff_4, Qt::AlignBottom);
+    chart_diff_4->addAxis(axisY_diff_4, Qt::AlignLeft);
+
+    series_diff_4->attachAxis(axisX_diff_4);
+    series_diff_4->attachAxis(axisY_diff_4);
+
+    QChartView *chartView_diff_4 = new QChartView(chart_diff_4);
+    chartView_diff_4->setRenderHint(QPainter::Antialiasing);
+
+    QMainWindow window_diff_4;
+    window_diff_4.setCentralWidget(chartView_diff_4);
+    window_diff_4.resize(800, 600);
+    window_diff_4.setWindowTitle("Answer Difference vs Matrix Size");
+    window_diff_4.show();
 
 
 #endif
