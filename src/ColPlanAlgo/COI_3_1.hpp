@@ -8,6 +8,7 @@
 #include <set>
 #include <map>
 #include <limits>
+#include <climits>
 
 //15 13 8
 //21 19 5
@@ -206,22 +207,30 @@ bool COI_3_1<T>::isUsedCols() const noexcept
 template<typename T>
 void COI_3_1<T>::Step_0()
 {
-    for(std::size_t i = 0; i < num_rows; i++)
+    distribution_plan.clear();
+    for (std::size_t i = 0; i < num_rows; i++)
     {
-        std::pair<T, std::size_t> max = { std::numeric_limits<T>::max(), 0 };
+        T min_val = std::numeric_limits<T>::max();
+        std::size_t min_col = 0;
+        bool found = false;
 
-        for(std::size_t j = 0; j < num_cols; j++)
+        for (std::size_t j = 0; j < num_cols; j++)
         {
-            if(D[i][j] < max.first && !used_cols[j])
+            if (!used_cols[j] && D[i][j] < min_val)
             {
-                max.first = D[i][j];
-                max.second = j;
+                min_val = D[i][j];
+                min_col = j;
+                found = true;
             }
         }
-
-        used_cols[max.second] = true;
-        used_rows[i] = true;
-        distribution_plan[i] = max.second;
+        if (found)
+        {
+            used_cols[min_col] = true;
+            used_rows[i] = true;
+            distribution_plan[i] = min_col;
+        } else {
+            throw std::runtime_error("No feasible initial plan found");
+        }
     }
 }
 
@@ -394,7 +403,7 @@ bool COI_3_1<T>::Step_3_4()
 #endif
 
         do {
-            std::pair<T, std::size_t> next_robot = {-20000, 0};
+            std::pair<T, std::size_t> next_robot = {-INT_MAX, 0};
 
             for(std::size_t i = 0; i < num_rows; ++i)
             {
@@ -432,18 +441,28 @@ bool COI_3_1<T>::Step_3_4()
         std::cout << "Y: " << Y << "\n\n";
 #endif
 
-        if(Y > 0)
+        if(Y >= 0)
         {
-            distribution_plan = new_distribution_plan;
-            return true;
+            if(!Y)
+            {
+                auto tmp_dist = distribution_plan;
+                distribution_plan = new_distribution_plan;
+                bool step = Step_1_2();
+                if(step) return true;
+                else {
+                    distribution_plan = tmp_dist;
+                }
+            }
+            else {
+                distribution_plan = new_distribution_plan;
+                return true;
+            }
         }
 
 #ifdef DEBUG
         k++;
 #endif
-
     }
-
     return false;
 }
 

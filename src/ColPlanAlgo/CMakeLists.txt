@@ -35,6 +35,7 @@ set(PROJECT_SOURCES
         COI_3_9.hpp
         COI_3_1.hpp
         HungarianAlgo.hpp
+        AuctionAlgo.hpp
         solving_LP.hpp
 )
 
@@ -74,7 +75,7 @@ endif()
 target_include_directories(ColPlanAlgo PRIVATE ${LEMON_INCLUDE_DIR})
 # Подключение библиотек, включая Charts
 target_link_libraries(ColPlanAlgo PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Core
-    Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Charts ${OpenCV_LIBS} ${GLPK} ${LEMON_INCLUDE_DIR})
+    Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Charts ${GLPK})
 
 
 set_target_properties(ColPlanAlgo PROPERTIES
