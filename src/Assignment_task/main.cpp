@@ -70,13 +70,17 @@ int main() {
     {
         for(int m = n; m < num_iterations; ++m)
         {
+
+#ifdef DEBUG
             std::cout << "\nИтерация " << iter + 1 << ":\n";
+#endif
 
             // Генерация случайной матрицы и available_tasks
             std::vector<std::vector<double>> alpha;
             std::vector<std::vector<int>> available_tasks;
             generate_random_instance(n, m, min_utility, max_utility, alpha, available_tasks);
 
+#ifdef DEBUG
             // Вывод матрицы alpha
             std::cout << "Матрица полезностей (alpha):\n";
             for (int i = 0; i < n; ++i) {
@@ -99,6 +103,7 @@ int main() {
                 }
                 std::cout << "\n";
             }
+#endif
 
             // Запуск аукционного алгоритма
             std::vector<int> assignment;

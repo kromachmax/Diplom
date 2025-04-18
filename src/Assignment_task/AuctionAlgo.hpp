@@ -3,7 +3,8 @@
 #include <algorithm>
 
 template<typename T>
-class AuctionAlgo {
+class AuctionAlgo
+{
 private:
     // Вспомогательная функция для поиска максимума и индекса
     std::pair<T, int> find_max(const std::vector<T>& values) {

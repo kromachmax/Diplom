@@ -5,6 +5,14 @@ project(Assignment_task LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+#if(CMAKE_BUILD_TYPE MATCHES Debug)
+#    # Добавляем определение DEBUG
+#    add_definitions(-DDEBUG)
+#else()
+#    # Убираем определение DEBUG для других конфигураций (например, Release)
+#    remove_definitions(-DDEBUG)
+#endif()
+
 add_executable(Assignment_task HungarianAlgo.hpp AuctionAlgo.hpp main.cpp)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "KPDA")
