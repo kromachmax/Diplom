@@ -1,77 +1,135 @@
 #include <iostream>
 #include <vector>
-#include <string>
+#include <random>
+#include <algorithm>
+#include "AuctionAlgo.hpp"
 
-using namespace std;
+// Функция для генерации случайной матрицы alpha и available_tasks
+void generate_random_instance(int n, int m, double min_utility, double max_utility,
+                              std::vector<std::vector<double>>& alpha,
+                              std::vector<std::vector<int>>& available_tasks) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> util_dist(min_utility, max_utility);
+    std::uniform_int_distribution<> task_count_dist(1, m); // Количество доступных задач для робота
 
-#define INF 1e9
+    alpha.assign(n, std::vector<double>(m, -std::numeric_limits<double>::infinity()));
+    available_tasks.assign(n, std::vector<int>());
 
-int main(void)
-{
-    int n, m;
-    cin >> n >> m;
-    vector<int> u(n+1, 0), v(m+1, 0), p(m+1, 0), way(m+1, 0);
-    vector<vector<int>> a(n + 1, vector<int>(m + 1));
+    // Шаг 1: Гарантируем, что каждый робот имеет хотя бы одну задачу
+    // Создаём начальное паросочетание, чтобы обеспечить возможность назначения
+    std::vector<int> tasks(m);
+    for (int i = 0; i < m; ++i) tasks[i] = i;
+    std::shuffle(tasks.begin(), tasks.end(), gen); // Перемешиваем задачи
 
-    for(int i = 1; i < n + 1; i++)
-    {
-        for(int j = 1; j < m + 1; j++)
-        {
-            cin >> a[i][j];
-        }
+    for (int i = 0; i < n && i < m; ++i) {
+        available_tasks[i].push_back(tasks[i]);
+        alpha[i][tasks[i]] = util_dist(gen);
     }
 
-    for (int i=1; i<=n; ++i) {
-        p[0] = i;
-        int j0 = 0;
-        vector<int> minv (m+1, INF);
-        vector<char> used (m+1, false);
-        do {
-            used[j0] = true;
-            int i0 = p[j0],  delta = INF,  j1;
-            for (int j=1; j<=m; ++j)
-                if (!used[j]) {
-                    int cur = a[i0][j]-u[i0]-v[j];
-                    if (cur < minv[j])
-                        minv[j] = cur,  way[j] = j0;
-                    if (minv[j] < delta)
-                        delta = minv[j],  j1 = j;
-                }
-            for (int j=0; j<=m; ++j)
-                if (used[j])
-                    u[p[j]] += delta,  v[j] -= delta;
-                else
-                    minv[j] -= delta;
-            j0 = j1;
-        } while (p[j0] != 0);
-        do {
-            int j1 = way[j0];
-            p[j0] = p[j1];
-            j0 = j1;
-        } while (j0);
-    }
-
-    {
-        vector<int> ans (n+1);
-        for (int j=1; j<=m; ++j)
-            ans[p[j]] = j;
-
-        int row = 0;
-        int sum = 0;
-
-        cout << "answer:" << endl;
-        for(auto& el : ans)
-        {
-            if(!row)
-            {
-                row++;
-                continue;
+    // Шаг 2: Добавляем дополнительные случайные задачи
+    for (int i = 0; i < n; ++i) {
+        int num_tasks = task_count_dist(gen); // Сколько задач доступно роботу
+        num_tasks = std::min(num_tasks, m - static_cast<int>(available_tasks[i].size())); // Ограничиваем
+        std::vector<int> remaining_tasks;
+        for (int j = 0; j < m; ++j) {
+            if (std::find(available_tasks[i].begin(), available_tasks[i].end(), j) == available_tasks[i].end()) {
+                remaining_tasks.push_back(j);
             }
-            cout << "row: " << row << ", column: " << el << endl;
-            sum += a[row][el];
-            row++;
         }
-
-        cout << "sum: " << sum << endl;
+        std::shuffle(remaining_tasks.begin(), remaining_tasks.end(), gen);
+        for (int k = 0; k < num_tasks && !remaining_tasks.empty(); ++k) {
+            int task = remaining_tasks.back();
+            remaining_tasks.pop_back();
+            available_tasks[i].push_back(task);
+            alpha[i][task] = util_dist(gen);
+        }
     }
+
+    // Шаг 3: Проверяем, что каждый робот имеет хотя бы одну задачу
+    for (int i = 0; i < n; ++i) {
+        if (available_tasks[i].empty()) {
+            // Добавляем случайную задачу
+            int task = std::uniform_int_distribution<>(0, m-1)(gen);
+            available_tasks[i].push_back(task);
+            alpha[i][task] = util_dist(gen);
+        }
+    }
+}
+
+int main() {
+
+    AuctionAlgo<double> algo;
+    double epsilon = 0.5;
+    double min_utility = 1.0; // Минимальная полезность
+    double max_utility = 100.0; // Максимальная полезность
+    int num_iterations = 15; // Количество итераций
+    int iter = 0;
+
+    for(int n = 1; n < num_iterations; ++n)
+    {
+        for(int m = n; m < num_iterations; ++m)
+        {
+            std::cout << "\nИтерация " << iter + 1 << ":\n";
+
+            // Генерация случайной матрицы и available_tasks
+            std::vector<std::vector<double>> alpha;
+            std::vector<std::vector<int>> available_tasks;
+            generate_random_instance(n, m, min_utility, max_utility, alpha, available_tasks);
+
+            // Вывод матрицы alpha
+            std::cout << "Матрица полезностей (alpha):\n";
+            for (int i = 0; i < n; ++i) {
+                for (int j = 0; j < m; ++j) {
+                    if (alpha[i][j] == -std::numeric_limits<double>::infinity()) {
+                        std::cout << "-inf ";
+                    } else {
+                        std::cout << alpha[i][j] << " ";
+                    }
+                }
+                std::cout << "\n";
+            }
+
+            // Вывод available_tasks
+            std::cout << "Доступные задачи (available_tasks):\n";
+            for (int i = 0; i < n; ++i) {
+                std::cout << "Робот " << i << ": ";
+                for (int task : available_tasks[i]) {
+                    std::cout << task << " ";
+                }
+                std::cout << "\n";
+            }
+
+            // Запуск аукционного алгоритма
+            std::vector<int> assignment;
+            double total_utility = algo.Start(n, m, alpha, available_tasks, epsilon, assignment);
+
+            // Вывод результатов
+            std::cout << "Назначения (робот -> задача): ";
+            for (int i = 0; i < n; ++i) {
+                std::cout << assignment[i] << " ";
+            }
+            std::cout << "\nОбщая полезность: " << total_utility << "\n";
+
+            // Проверка корректности: все назначенные задачи уникальны
+            std::vector<int> used_tasks;
+            for (int task : assignment) {
+                if (task != -1) {
+                    used_tasks.push_back(task);
+                }
+            }
+            std::sort(used_tasks.begin(), used_tasks.end());
+            bool valid = true;
+            for (size_t i = 1; i < used_tasks.size(); ++i) {
+                if (used_tasks[i] == used_tasks[i-1]) {
+                    valid = false;
+                    break;
+                }
+            }
+            std::cout << "Назначения уникальны: " << (valid ? "Да" : "Нет") << "\n";
+            iter++;
+        }
+    }
+
+    return 0;
 }
