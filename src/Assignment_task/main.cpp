@@ -3,6 +3,7 @@
 #include <random>
 #include <algorithm>
 #include "AuctionAlgo.hpp"
+#include "HungarianAlgo.hpp"
 
 // Функция для генерации случайной матрицы alpha и available_tasks
 void generate_random_instance(int n, int m, double min_utility, double max_utility,
@@ -105,6 +106,8 @@ int main() {
             }
 #endif
 
+            std::cout << "Итерация " << iter + 1 << ": \n";
+            std::cout << "Матрица: " << n << "x" << m << std::endl;
             // Запуск аукционного алгоритма
             std::vector<int> assignment;
             double total_utility = algo.Start(n, m, alpha, available_tasks, epsilon, assignment);
@@ -116,22 +119,13 @@ int main() {
             }
             std::cout << "\nОбщая полезность: " << total_utility << "\n";
 
-            // Проверка корректности: все назначенные задачи уникальны
-            std::vector<int> used_tasks;
-            for (int task : assignment) {
-                if (task != -1) {
-                    used_tasks.push_back(task);
-                }
-            }
-            std::sort(used_tasks.begin(), used_tasks.end());
-            bool valid = true;
-            for (size_t i = 1; i < used_tasks.size(); ++i) {
-                if (used_tasks[i] == used_tasks[i-1]) {
-                    valid = false;
-                    break;
-                }
-            }
-            std::cout << "Назначения уникальны: " << (valid ? "Да" : "Нет") << "\n";
+
+            HungarionAlgo<double> hunAlgo;
+            std::vector<int> N(m, 1);
+            hunAlgo.Update(n, m, alpha, N);
+            total_utility = hunAlgo.Start();
+            std::cout << "\nОбщая полезность: " << total_utility << "\n\n";
+
             iter++;
         }
     }

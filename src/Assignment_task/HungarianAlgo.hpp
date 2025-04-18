@@ -139,10 +139,19 @@ T HungarionAlgo<T>::Start()
 
     // Calculate total profit
     T total_profit = 0;
+    std::vector<int> assignment(num_rows);
+
     for (std::size_t j = 1; j <= num_cols; ++j) {
         if (p[j] > 0) {
             total_profit += D[p[j]-1][j-1];
+            assignment[p[j]-1] = j - 1;
         }
+    }
+
+    // Вывод результатов
+    std::cout << "Назначения (робот -> задача): ";
+    for (int i = 0; i < num_rows; ++i) {
+        std::cout << assignment[i] << " ";
     }
 
     answer = total_profit;
