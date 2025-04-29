@@ -17,13 +17,13 @@ using namespace std;
 #include <limits>
 
 template <typename T>
-class HungarionAlgo
+class HungarianAlgo
 {
 public:
-    HungarionAlgo() noexcept = default;
-    explicit HungarionAlgo(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
+    HungarianAlgo() noexcept = default;
+    explicit HungarianAlgo(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
     void Update(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
-    [[nodiscard]] T Start();
+    [[nodiscard]] T Start(std::vector<int>&);
 
 private:
     [[nodiscard]] bool isUsedRows() const noexcept;
@@ -52,7 +52,7 @@ private:
 
 
 template<typename T>
-HungarionAlgo<T>::HungarionAlgo(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N)
+HungarianAlgo<T>::HungarianAlgo(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N)
     : num_rows(n), num_cols(m), D(D), N_max(N), used_rows(n, false), used_cols(m, false)
 {
     if (D.size() != n || (n > 0 && D[0].size() != m) || N.size() != m)
@@ -62,7 +62,7 @@ HungarionAlgo<T>::HungarionAlgo(std::size_t n, std::size_t m, std::vector<std::v
 }
 
 template<typename T>
-T HungarionAlgo<T>::Start()
+T HungarianAlgo<T>::Start(std::vector<int>& assignment)
 {
     if (num_rows == 0 || num_cols == 0) {
         return T(0);
@@ -139,7 +139,7 @@ T HungarionAlgo<T>::Start()
 
     // Calculate total profit
     T total_profit = 0;
-    std::vector<int> assignment(num_rows);
+    assignment.resize(num_rows, -1);
 
     for (std::size_t j = 1; j <= num_cols; ++j) {
         if (p[j] > 0) {
@@ -159,7 +159,7 @@ T HungarionAlgo<T>::Start()
 }
 
 template<typename T>
-void HungarionAlgo<T>::Update(std::size_t n, std::size_t m, std::vector<std::vector<T> > &D, std::vector<int> &N)
+void HungarianAlgo<T>::Update(std::size_t n, std::size_t m, std::vector<std::vector<T> > &D, std::vector<int> &N)
 {
     if (D.size() != n || (n > 0 && D[0].size() != m) || N.size() != m)
     {
@@ -178,28 +178,28 @@ void HungarionAlgo<T>::Update(std::size_t n, std::size_t m, std::vector<std::vec
 
 template<typename T>
 template<typename F>
-bool HungarionAlgo<T>::notNull(const std::vector<F>& v) const noexcept
+bool HungarianAlgo<T>::notNull(const std::vector<F>& v) const noexcept
 {
     return std::any_of(v.begin(), v.end(), [](const F& val) { return val > 0; });
 }
 
 
 template<typename T>
-bool HungarionAlgo<T>::isUsedRows() const noexcept
+bool HungarianAlgo<T>::isUsedRows() const noexcept
 {
     return std::all_of(used_rows.begin(), used_rows.end(), [](bool used) { return used; });
 }
 
 
 template<typename T>
-bool HungarionAlgo<T>::isUsedCols() const noexcept
+bool HungarianAlgo<T>::isUsedCols() const noexcept
 {
     return std::all_of(used_cols.begin(), used_cols.end(), [](bool used) { return used; });
 }
 
 
 template<typename T>
-void HungarionAlgo<T>::printMatrix(const std::vector<std::vector<T>>& matrix) const
+void HungarianAlgo<T>::printMatrix(const std::vector<std::vector<T>>& matrix) const
 {
     std::cout << '\n';
     for (std::size_t i = 0; i < matrix.size(); ++i)
