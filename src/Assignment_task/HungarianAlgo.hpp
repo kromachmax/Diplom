@@ -1,20 +1,12 @@
-#include <iostream>
-#include <vector>
-#include <string>
-
-using namespace std;
-
-
 #ifndef HUNGARIANALGO_HPP
 #define HUNGARIANALGO_HPP
 
 #include <iostream>
 #include <vector>
-#include <string>
 #include <stdlib.h>
-#include <set>
 #include <map>
 #include <limits>
+#include <algorithm>
 
 template <typename T>
 class HungarianAlgo
