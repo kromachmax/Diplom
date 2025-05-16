@@ -1,7 +1,31 @@
+#ifndef AUCTION_ALGO
+#define AUCTION_ALGO
+
 #include <vector>
 #include <limits>
 #include <algorithm>
 #include <queue>
+#include <iostream>
+#include <cmath>
+
+namespace PARAMETRS
+{
+    static double min_utility;
+    static double max_utility;
+    static double visibility_radius;
+    const  double DISTANCE_OFFSET = 0.1;
+    const  double epsilon = 1e-5;
+}
+
+// Структура для хранения координат
+struct Point {
+    double x, y;
+};
+
+// Функция для вычисления евклидова расстояния
+double calculate_distance(const Point& p1, const Point& p2) {
+    return std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
+}
 
 template<typename T>
 class AuctionAlgo
@@ -20,13 +44,17 @@ private:
         return {max_val, max_idx};
     }
 
-    // Обновление доступных задач на основе видимости и обмена информацией
     void update_available_tasks(
         int n, int m,
+        std::vector<std::vector<T>>& alpha,
         const std::vector<std::vector<int>>& visibility_robots,
         const std::vector<std::vector<int>>& visibility_tasks,
+        const std::vector<Point>& robot_coords,
+        const std::vector<Point>& task_coords,
         std::vector<std::vector<int>>& available_tasks)
     {
+        const double DISTANCE_OFFSET = 0.1;
+
         // Используем BFS для распространения информации о задачах
         for (int start_robot = 0; start_robot < n; ++start_robot)
         {
@@ -40,36 +68,70 @@ private:
                 int current_robot = q.front();
                 q.pop();
 
-                // Добавляем все задачи, видимые текущим роботом, к доступным задачам стартового робота
+                // Добавляем все задачи, видимые текущим роботом
                 for (int task = 0; task < m; ++task)
                 {
                     if (visibility_tasks[current_robot][task])
                     {
                         if (std::find(available_tasks[start_robot].begin(),
                                       available_tasks[start_robot].end(), task) ==
-                            available_tasks[start_robot].end()) {
+                            available_tasks[start_robot].end())
+                        {
                             available_tasks[start_robot].push_back(task);
+                            // Обновляем alpha
+                            if (alpha[start_robot][task] == -std::numeric_limits<double>::infinity())
+                            {
+                                double distance = calculate_distance(robot_coords[start_robot], task_coords[task]);
+                                alpha[start_robot][task] = PARAMETRS::max_utility / (distance + DISTANCE_OFFSET);
+                                std::cout << "Updated alpha[" << start_robot << "][" << task << "] = " << alpha[start_robot][task] << "\n";
+                            }
                         }
                     }
                 }
 
-                // Посещаем соседних роботов, которых видит текущий робот
+                // Посещаем соседних роботов
                 for (int next_robot = 0; next_robot < n; ++next_robot)
                 {
-                    if (visibility_robots[current_robot][next_robot] && !visited[next_robot]) {
+                    if (visibility_robots[current_robot][next_robot] && !visited[next_robot])
+                    {
                         visited[next_robot] = true;
                         q.push(next_robot);
                     }
                 }
             }
         }
+
+        std::cout << "Available tasks:\n";
+        for (const auto& robot : available_tasks)
+        {
+            for (const auto& available_task : robot)
+            {
+                std::cout << available_task << ' ';
+            }
+            std::cout << '\n';
+        }
+
+        std::cout << "Updated alpha matrix:\n";
+        for (int i = 0; i < n; ++i)
+        {
+            for (int j = 0; j < m; ++j)
+            {
+                if (alpha[i][j] == -std::numeric_limits<double>::infinity())
+                    std::cout << "-inf ";
+                else
+                    std::cout << alpha[i][j] << ' ';
+            }
+            std::cout << '\n';
+        }
     }
 
 public:
     T Start(int n, int m,
-            const std::vector<std::vector<T>>& alpha,
+            std::vector<std::vector<T>>& alpha,
             const std::vector<std::vector<int>>& visibility_tasks,
             const std::vector<std::vector<int>>& visibility_robots,
+            const std::vector<Point>& robot_coords,
+            const std::vector<Point>& task_coords,
             double epsilon,
             std::vector<int>& assignment)
     {
@@ -86,7 +148,7 @@ public:
         }
 
         // Обновляем доступные задачи с учётом обмена информацией
-        update_available_tasks(n, m, visibility_robots, visibility_tasks, available_tasks);
+        update_available_tasks(n, m, alpha, visibility_robots, visibility_tasks, robot_coords, task_coords, available_tasks);
 
         // Инициализация цен задач
         std::vector<T> prices(m, T(0));
@@ -204,3 +266,5 @@ public:
         return total_utility;
     }
 };
+
+#endif

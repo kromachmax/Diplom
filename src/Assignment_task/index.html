@@ -7,71 +7,49 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
     <style>
         body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            overflow: hidden; /* Убираем скролл */
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 10px;
-            box-sizing: border-box;
-            height: 100vh; /* Занимаем всю высоту экрана */
-            overflow: auto; /* Прокрутка, если контент не помещается */
         }
         #controls {
-            margin: 10px 0;
+            padding: 10px;
+            background-color: #f0f0f0;
             text-align: center;
+            flex-shrink: 0; /* Фиксированная высота */
         }
         button {
-            padding: 10px 20px;
+            padding: 8px 16px;
             margin: 5px;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
         }
         button:hover {
             background-color: #45a049;
         }
-        .canvas-container {
-            display: flex;
-            justify-content: center;
-            gap: 10px; /* Минимальный зазор между canvas */
-            flex-wrap: wrap;
-            width: 100%;
-            flex-grow: 1; /* Растягиваем контейнер по высоте */
-        }
-        .canvas-wrapper {
-            flex: 1; /* Каждый canvas занимает равную долю */
-            min-width: 300px; /* Минимальная ширина для маленьких экранов */
-            max-width: calc(50% - 5px); /* Половина ширины минус половина зазора */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        canvas {
-            width: 100%; /* Занимает всю ширину wrapper */
-            height: auto; /* Высота подстраивается */
-            border: 1px solid #ccc;
-        }
-        h3 {
-            text-align: center;
+        #status {
+            font-size: 14px;
+            color: #333;
             margin: 5px 0;
-            font-size: 18px;
         }
-        @media (max-width: 600px) {
-            .canvas-wrapper {
-                max-width: 100%; /* На маленьких экранах canvas занимает всю ширину */
-            }
-            button {
-                font-size: 14px;
-                padding: 8px 16px;
-            }
-            h3 {
-                font-size: 16px;
-            }
+        #canvas-container {
+            flex-grow: 1; /* Занимает всё доступное пространство */
+            position: relative;
+            overflow: hidden;
+        }
+        #auctionCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
@@ -81,97 +59,91 @@
         <button onclick="nextIteration()">Следующая</button>
         <button onclick="toggleAutoPlay()">Воспроизвести</button>
         <span>Итерация: <span id="iterDisplay">1</span></span>
+        <div id="status">Загрузка данных...</div>
     </div>
-    <div class="canvas-container">
-        <div class="canvas-wrapper">
-            <h3>Аукционный алгоритм</h3>
-            <div id="auctionCanvas"></div>
-        </div>
-        <div class="canvas-wrapper">
-            <h3>Венгерский алгоритм</h3>
-            <div id="hungarianCanvas"></div>
-        </div>
+    <div id="canvas-container">
+        <div id="auctionCanvas"></div>
     </div>
     <script>
-        let auctionIterations = [];
-        let hungarianIterations = [];
+        let iterations = [];
         let currentIter = 0;
         let autoPlay = false;
         let lastSwitchTime = Date.now();
-        const AUTO_PLAY_INTERVAL = 3000; // 3 секунды
+        const AUTO_PLAY_INTERVAL = 2000; // 2 секунды
         let animProgress = 0;
-        const ANIM_DURATION = 60;
+        const ANIM_DURATION = 30; // 0.5 секунды при 60 FPS
 
-        // Функция для вычисления размеров canvas
-        function getCanvasSize() {
-            const containerWidth = window.innerWidth - 20; // Учитываем padding body (10px с каждой стороны)
-            const canvasWidth = Math.max(300, (containerWidth - 10) / 2); // Половина ширины минус зазор, минимум 300px
-            const canvasHeight = Math.min(canvasWidth * 0.75, (window.innerHeight - 100) * 0.9); // Соотношение 4:3, ограничено высотой окна
-            return { width: canvasWidth, height: canvasHeight };
-        }
-
-        // Загрузка JSON-файлов
-        Promise.all([
-            fetch('auction_assignments.json').then(response => response.json()),
-            fetch('hungarian_assignments.json').then(response => response.json())
-        ])
-            .then(([auctionData, hungarianData]) => {
-                auctionIterations = auctionData;
-                hungarianIterations = hungarianData;
-                console.log('JSON загружен:', auctionIterations.length, 'итераций');
+        // Загрузка JSON
+        fetch('auction_assignments.json')
+            .then(response => {
+                if (!response.ok) throw new Error('Не удалось загрузить auction_assignments.json');
+                return response.json();
+            })
+            .then(data => {
+                iterations = data;
+                document.getElementById('status').textContent = `Загружено ${iterations.length} итераций`;
+                console.log('JSON загружен:', iterations.length, 'итераций');
                 updateIterDisplay();
             })
             .catch(error => {
-                console.error('Ошибка загрузки JSON:', error);
+                document.getElementById('status').textContent = 'Ошибка загрузки данных';
+                console.error('Ошибка:', error);
             });
 
-        let auctionSketch = function(p) {
+        // p5.js sketch для аукционного алгоритма
+        let sketch = function(p) {
             p.setup = function() {
-                const { width, height } = getCanvasSize();
-                p.createCanvas(width, height);
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight - document.getElementById('controls').offsetHeight);
+                canvas.parent('canvas-container');
                 p.textAlign(p.CENTER, p.CENTER);
-                p.textSize(14);
+                p.textSize(12);
                 p.frameRate(60);
             };
 
             p.windowResized = function() {
-                const { width, height } = getCanvasSize();
-                p.resizeCanvas(width, height);
+                p.resizeCanvas(p.windowWidth, p.windowHeight - document.getElementById('controls').offsetHeight);
             };
 
             p.draw = function() {
                 p.background(255);
-                if (auctionIterations.length === 0) {
+                if (iterations.length === 0) {
+                    p.fill(0);
                     p.text('Ожидание данных...', p.width / 2, p.height / 2);
                     return;
                 }
 
-                const data = auctionIterations[currentIter];
+                const data = iterations[currentIter];
                 const { n, m, assignment, robot_coords, task_coords } = data;
 
-                const margin = Math.max(20, p.width * 0.1); // Динамический отступ
+                // Масштабирование координат с учетом новых размеров
+                const margin = Math.min(p.width, p.height) * 0.05;
                 const scaleX = (p.width - 2 * margin) / 100;
                 const scaleY = (p.height - 2 * margin) / 100;
 
+                // Рисуем роботов (синие круги)
                 for (let i = 0; i < n; i++) {
                     let x = margin + robot_coords[i][0] * scaleX;
                     let y = margin + robot_coords[i][1] * scaleY;
                     p.fill(100, 100, 255);
-                    p.ellipse(x, y, 20, 20);
+                    p.noStroke();
+                    p.ellipse(x, y, 15, 15);
                     p.fill(0);
-                    p.text(`Робот ${i}`, x, y + 30);
+                    p.text(`R${i}`, x, y + 25);
                 }
 
+                // Рисуем задачи (красные квадраты)
                 for (let j = 0; j < m; j++) {
                     let x = margin + task_coords[j][0] * scaleX;
                     let y = margin + task_coords[j][1] * scaleY;
                     p.fill(255, 100, 100);
+                    p.noStroke();
                     p.rect(x - 10, y - 10, 20, 20);
                     p.fill(0);
-                    p.text(`Задача ${j}`, x, y + 30);
+                    p.text(`T${j}`, x, y + 25);
                 }
 
-                p.stroke(0, 150, 0); // Зелёные линии для аукционного
+                // Рисуем назначения (зелёные линии)
+                p.stroke(0, 150, 0);
                 p.strokeWeight(2);
                 for (let i = 0; i < n; i++) {
                     if (assignment[i] >= 0 && assignment[i] < m) {
@@ -179,105 +151,31 @@
                         let startY = margin + robot_coords[i][1] * scaleY;
                         let endX = margin + task_coords[assignment[i]][0] * scaleX;
                         let endY = margin + task_coords[assignment[i]][1] * scaleY;
-                        let t = easeInOutQuad(animProgress / ANIM_DURATION);
-                        if (animProgress < ANIM_DURATION) {
-                            let interpX = startX + (endX - startX) * t;
-                            let interpY = startY + (endY - startY) * t;
-                            p.line(startX, startY, interpX, interpY);
-                        } else {
-                            p.line(startX, startY, endX, endY);
-                        }
+                        let t = Math.min(animProgress / ANIM_DURATION, 1);
+                        let interpX = startX + (endX - startX) * t;
+                        let interpY = startY + (endY - startY) * t;
+                        p.line(startX, startY, interpX, interpY);
                     }
                 }
+                p.noStroke();
             };
         };
 
-        let hungarianSketch = function(p) {
-            p.setup = function() {
-                const { width, height } = getCanvasSize();
-                p.createCanvas(width, height);
-                p.textAlign(p.CENTER, p.CENTER);
-                p.textSize(14);
-                p.frameRate(60);
-            };
+        // Создание p5.js экземпляра
+        new p5(sketch, 'auctionCanvas');
 
-            p.windowResized = function() {
-                const { width, height } = getCanvasSize();
-                p.resizeCanvas(width, height);
-            };
-
-            p.draw = function() {
-                p.background(255);
-                if (hungarianIterations.length === 0) {
-                    p.text('Ожидание данных...', p.width / 2, p.height / 2);
-                    return;
-                }
-
-                const data = hungarianIterations[currentIter];
-                const { n, m, assignment, robot_coords, task_coords } = data;
-
-                const margin = Math.max(20, p.width * 0.1); // Динамический отступ
-                const scaleX = (p.width - 2 * margin) / 100;
-                const scaleY = (p.height - 2 * margin) / 100;
-
-                for (let i = 0; i < n; i++) {
-                    let x = margin + robot_coords[i][0] * scaleX;
-                    let y = margin + robot_coords[i][1] * scaleY;
-                    p.fill(100, 100, 255);
-                    p.ellipse(x, y, 20, 20);
-                    p.fill(0);
-                    p.text(`Робот ${i}`, x, y + 30);
-                }
-
-                for (let j = 0; j < m; j++) {
-                    let x = margin + task_coords[j][0] * scaleX;
-                    let y = margin + task_coords[j][1] * scaleY;
-                    p.fill(255, 100, 100);
-                    p.rect(x - 10, y - 10, 20, 20);
-                    p.fill(0);
-                    p.text(`Задача ${j}`, x, y + 30);
-                }
-
-                p.stroke(0, 150, 0); // Зелёные линии для венгерского
-                p.strokeWeight(2);
-                for (let i = 0; i < n; i++) {
-                    if (assignment[i] >= 0 && assignment[i] < m) {
-                        let startX = margin + robot_coords[i][0] * scaleX;
-                        let startY = margin + robot_coords[i][1] * scaleY;
-                        let endX = margin + task_coords[assignment[i]][0] * scaleX;
-                        let endY = margin + task_coords[assignment[i]][1] * scaleY;
-                        let t = easeInOutQuad(animProgress / ANIM_DURATION);
-                        if (animProgress < ANIM_DURATION) {
-                            let interpX = startX + (endX - startX) * t;
-                            let interpY = startY + (endY - startY) * t;
-                            p.line(startX, startY, interpX, interpY);
-                        } else {
-                            p.line(startX, startY, endX, endY);
-                        }
-                    }
-                }
-            };
-        };
-
-        // Создание двух p5.js экземпляров
-        new p5(auctionSketch, 'auctionCanvas');
-        new p5(hungarianSketch, 'hungarianCanvas');
-
-        function easeInOutQuad(t) {
-            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-        }
-
+        // Управление итерациями
         function nextIteration() {
-            if (currentIter < auctionIterations.length - 1) {
+            if (currentIter < iterations.length - 1) {
                 currentIter++;
                 animProgress = 0;
                 updateIterDisplay();
                 lastSwitchTime = Date.now();
-                console.log('Следующая итерация:', currentIter + 1);
+                console.log('Итерация:', currentIter + 1);
             } else {
                 autoPlay = false;
                 document.querySelector('button[onclick="toggleAutoPlay()"]').textContent = "Воспроизвести";
-                console.log('Достигнута последняя итерация');
+                console.log('Последняя итерация');
             }
         }
 
@@ -287,7 +185,7 @@
                 animProgress = 0;
                 updateIterDisplay();
                 lastSwitchTime = Date.now();
-                console.log('Предыдущая итерация:', currentIter + 1);
+                console.log('Итерация:', currentIter + 1);
             }
         }
 
@@ -302,7 +200,7 @@
             document.getElementById('iterDisplay').textContent = currentIter + 1;
         }
 
-        // Обновление анимации для обоих canvas
+        // Обновление анимации
         setInterval(() => {
             if (animProgress < ANIM_DURATION) {
                 animProgress++;
