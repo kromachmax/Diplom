@@ -78,7 +78,7 @@ private:
                             available_tasks[start_robot].end())
                         {
                             available_tasks[start_robot].push_back(task);
-                            // Обновляем alpha
+
                             if (alpha[start_robot][task] == -std::numeric_limits<double>::infinity())
                             {
                                 double distance = calculate_distance(robot_coords[start_robot], task_coords[task]);

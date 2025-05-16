@@ -10,7 +10,7 @@
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            overflow: hidden; /* Убираем скролл */
+            overflow: hidden;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -19,7 +19,7 @@
             padding: 10px;
             background-color: #f0f0f0;
             text-align: center;
-            flex-shrink: 0; /* Фиксированная высота */
+            flex-shrink: 0;
         }
         button {
             padding: 8px 16px;
@@ -40,7 +40,7 @@
             margin: 5px 0;
         }
         #canvas-container {
-            flex-grow: 1; /* Занимает всё доступное пространство */
+            flex-grow: 1;
             position: relative;
             overflow: hidden;
         }
@@ -55,42 +55,25 @@
 </head>
 <body>
     <div id="controls">
-        <button onclick="prevIteration()">Предыдущая</button>
-        <button onclick="nextIteration()">Следующая</button>
-        <button onclick="toggleAutoPlay()">Воспроизвести</button>
-        <span>Итерация: <span id="iterDisplay">1</span></span>
-        <div id="status">Загрузка данных...</div>
+        <button onclick="toggleMode('robot')">Добавить робота</button>
+        <button onclick="toggleMode('task')">Добавить задачу</button>
+        <button onclick="clearCanvas()">Очистить</button>
+        <button onclick="runAlgorithm()">Запустить алгоритм</button>
+        <div id="status">Режим: Добавление роботов</div>
     </div>
     <div id="canvas-container">
         <div id="auctionCanvas"></div>
     </div>
     <script>
-        let iterations = [];
-        let currentIter = 0;
-        let autoPlay = false;
-        let lastSwitchTime = Date.now();
-        const AUTO_PLAY_INTERVAL = 2000; // 2 секунды
+        let robot_coords = [];
+        let task_coords = [];
+        let assignment = [];
+        let mode = 'robot'; // 'robot' или 'task'
         let animProgress = 0;
         const ANIM_DURATION = 30; // 0.5 секунды при 60 FPS
+        let visibilityRadius = 15.0; // Значение по умолчанию
 
-        // Загрузка JSON
-        fetch('auction_assignments.json')
-            .then(response => {
-                if (!response.ok) throw new Error('Не удалось загрузить auction_assignments.json');
-                return response.json();
-            })
-            .then(data => {
-                iterations = data;
-                document.getElementById('status').textContent = `Загружено ${iterations.length} итераций`;
-                console.log('JSON загружен:', iterations.length, 'итераций');
-                updateIterDisplay();
-            })
-            .catch(error => {
-                document.getElementById('status').textContent = 'Ошибка загрузки данных';
-                console.error('Ошибка:', error);
-            });
-
-        // p5.js sketch для аукционного алгоритма
+        // p5.js sketch
         let sketch = function(p) {
             p.setup = function() {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight - document.getElementById('controls').offsetHeight);
@@ -104,24 +87,43 @@
                 p.resizeCanvas(p.windowWidth, p.windowHeight - document.getElementById('controls').offsetHeight);
             };
 
+            p.mousePressed = function() {
+                if (p.mouseY > document.getElementById('controls').offsetHeight && p.mouseX >= 0 && p.mouseX < p.width && p.mouseY < p.height) {
+                    const margin = Math.min(p.width, p.height) * 0.05;
+                    const scaleX = (p.width - 2 * margin) / 100;
+                    const scaleY = (p.height - 2 * margin) / 100;
+                    const x = (p.mouseX - margin) / scaleX;
+                    const y = (p.mouseY - margin) / scaleY;
+                    if (mode === 'robot') {
+                        robot_coords.push([x, y]);
+                        document.getElementById('status').textContent = `Добавлен робот ${robot_coords.length - 1} в (${x.toFixed(2)}, ${y.toFixed(2)})`;
+                    } else {
+                        task_coords.push([x, y]);
+                        document.getElementById('status').textContent = `Добавлена задача ${task_coords.length - 1} в (${x.toFixed(2)}, ${y.toFixed(2)})`;
+                    }
+                    assignment = []; // Сброс назначений при добавлении
+                }
+            };
+
             p.draw = function() {
                 p.background(255);
-                if (iterations.length === 0) {
-                    p.fill(0);
-                    p.text('Ожидание данных...', p.width / 2, p.height / 2);
-                    return;
-                }
 
-                const data = iterations[currentIter];
-                const { n, m, assignment, robot_coords, task_coords } = data;
-
-                // Масштабирование координат с учетом новых размеров
                 const margin = Math.min(p.width, p.height) * 0.05;
                 const scaleX = (p.width - 2 * margin) / 100;
                 const scaleY = (p.height - 2 * margin) / 100;
 
+                // Рисуем окружности радиуса видимости для роботов
+                for (let i = 0; i < robot_coords.length; i++) {
+                    let x = margin + robot_coords[i][0] * scaleX;
+                    let y = margin + robot_coords[i][1] * scaleY;
+                    p.noFill();
+                    p.stroke(100, 100, 255, 100); // Полупрозрачный синий
+                    p.strokeWeight(1);
+                    p.ellipse(x, y, visibilityRadius * scaleX * 2, visibilityRadius * scaleY * 2);
+                }
+
                 // Рисуем роботов (синие круги)
-                for (let i = 0; i < n; i++) {
+                for (let i = 0; i < robot_coords.length; i++) {
                     let x = margin + robot_coords[i][0] * scaleX;
                     let y = margin + robot_coords[i][1] * scaleY;
                     p.fill(100, 100, 255);
@@ -132,7 +134,7 @@
                 }
 
                 // Рисуем задачи (красные квадраты)
-                for (let j = 0; j < m; j++) {
+                for (let j = 0; j < task_coords.length; j++) {
                     let x = margin + task_coords[j][0] * scaleX;
                     let y = margin + task_coords[j][1] * scaleY;
                     p.fill(255, 100, 100);
@@ -143,70 +145,82 @@
                 }
 
                 // Рисуем назначения (зелёные линии)
-                p.stroke(0, 150, 0);
-                p.strokeWeight(2);
-                for (let i = 0; i < n; i++) {
-                    if (assignment[i] >= 0 && assignment[i] < m) {
-                        let startX = margin + robot_coords[i][0] * scaleX;
-                        let startY = margin + robot_coords[i][1] * scaleY;
-                        let endX = margin + task_coords[assignment[i]][0] * scaleX;
-                        let endY = margin + task_coords[assignment[i]][1] * scaleY;
-                        let t = Math.min(animProgress / ANIM_DURATION, 1);
-                        let interpX = startX + (endX - startX) * t;
-                        let interpY = startY + (endY - startY) * t;
-                        p.line(startX, startY, interpX, interpY);
+                if (assignment.length > 0) {
+                    p.stroke(0, 150, 0);
+                    p.strokeWeight(2);
+                    for (let i = 0; i < robot_coords.length; i++) {
+                        if (assignment[i] >= 0 && assignment[i] < task_coords.length) {
+                            let startX = margin + robot_coords[i][0] * scaleX;
+                            let startY = margin + robot_coords[i][1] * scaleY;
+                            let endX = margin + task_coords[assignment[i]][0] * scaleX;
+                            let endY = margin + task_coords[assignment[i]][1] * scaleY;
+                            let t = Math.min(animProgress / ANIM_DURATION, 1);
+                            let interpX = startX + (endX - startX) * t;
+                            let interpY = startY + (endY - startY) * t;
+                            p.line(startX, startY, interpX, interpY);
+                        }
                     }
+                    p.noStroke();
                 }
-                p.noStroke();
             };
         };
 
-        // Создание p5.js экземпляра
         new p5(sketch, 'auctionCanvas');
 
-        // Управление итерациями
-        function nextIteration() {
-            if (currentIter < iterations.length - 1) {
-                currentIter++;
-                animProgress = 0;
-                updateIterDisplay();
-                lastSwitchTime = Date.now();
-                console.log('Итерация:', currentIter + 1);
-            } else {
-                autoPlay = false;
-                document.querySelector('button[onclick="toggleAutoPlay()"]').textContent = "Воспроизвести";
-                console.log('Последняя итерация');
+        function toggleMode(newMode) {
+            mode = newMode;
+            document.getElementById('status').textContent = `Режим: Добавление ${mode === 'robot' ? 'роботов' : 'задач'}`;
+        }
+
+        function clearCanvas() {
+            robot_coords = [];
+            task_coords = [];
+            assignment = [];
+            document.getElementById('status').textContent = `Поле очищено. Режим: Добавление ${mode === 'robot' ? 'роботов' : 'задач'}`;
+        }
+
+        function runAlgorithm() {
+            if (robot_coords.length === 0 || task_coords.length === 0) {
+                document.getElementById('status').textContent = 'Ошибка: Добавьте хотя бы одного робота и одну задачу';
+                return;
             }
-        }
 
-        function prevIteration() {
-            if (currentIter > 0) {
-                currentIter--;
+            const data = {
+                n: robot_coords.length,
+                m: task_coords.length,
+                robot_coords: robot_coords,
+                task_coords: task_coords
+            };
+
+            document.getElementById('status').textContent = 'Отправка данных на сервер...';
+
+            fetch('http://localhost:8000/run_auction', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Ошибка сервера');
+                return response.json();
+            })
+            .then(data => {
+                assignment = data.assignment;
+                visibilityRadius = data.visibility_radius || 15.0; // Обновляем радиус, fallback на 15.0
                 animProgress = 0;
-                updateIterDisplay();
-                lastSwitchTime = Date.now();
-                console.log('Итерация:', currentIter + 1);
-            }
-        }
-
-        function toggleAutoPlay() {
-            autoPlay = !autoPlay;
-            lastSwitchTime = Date.now();
-            document.querySelector('button[onclick="toggleAutoPlay()"]').textContent = autoPlay ? "Пауза" : "Воспроизвести";
-            console.log('Автопроигрывание:', autoPlay ? 'включено' : 'выключено');
-        }
-
-        function updateIterDisplay() {
-            document.getElementById('iterDisplay').textContent = currentIter + 1;
+                document.getElementById('status').textContent = `Получены назначения. Полезность: ${data.utility.toFixed(2)}`;
+                console.log('Назначения:', assignment);
+                console.log('Радиус видимости:', visibilityRadius);
+            })
+            .catch(error => {
+                document.getElementById('status').textContent = 'Ошибка: ' + error.message;
+                console.error('Ошибка:', error);
+            });
         }
 
         // Обновление анимации
         setInterval(() => {
             if (animProgress < ANIM_DURATION) {
                 animProgress++;
-            }
-            if (autoPlay && Date.now() - lastSwitchTime > AUTO_PLAY_INTERVAL) {
-                nextIteration();
             }
         }, 1000 / 60);
     </script>
