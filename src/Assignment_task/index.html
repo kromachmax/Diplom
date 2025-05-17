@@ -68,16 +68,15 @@
         let robot_coords = [];
         let task_coords = [];
         let assignment = [];
-        let mode = 'robot'; // 'robot' или 'task'
+        let mode = 'robot';
         let animProgress = 0;
-        const ANIM_DURATION = 30; // 0.5 секунды при 60 FPS
-        let visibilityRadius = 15.0; // Значение по умолчанию
+        const ANIM_DURATION = 30;
+        let visibilityRadius = 15.0;
 
-        // p5.js sketch
         let sketch = function(p) {
             p.setup = function() {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight - document.getElementById('controls').offsetHeight);
-                canvas.parent('canvas-container');
+                canvas.parent('auctionCanvas');
                 p.textAlign(p.CENTER, p.CENTER);
                 p.textSize(12);
                 p.frameRate(60);
@@ -101,7 +100,7 @@
                         task_coords.push([x, y]);
                         document.getElementById('status').textContent = `Добавлена задача ${task_coords.length - 1} в (${x.toFixed(2)}, ${y.toFixed(2)})`;
                     }
-                    assignment = []; // Сброс назначений при добавлении
+                    assignment = [];
                 }
             };
 
@@ -111,18 +110,17 @@
                 const margin = Math.min(p.width, p.height) * 0.05;
                 const scaleX = (p.width - 2 * margin) / 100;
                 const scaleY = (p.height - 2 * margin) / 100;
+                const scale = Math.min(scaleX, scaleY); // Единый масштаб для окружностей
 
-                // Рисуем окружности радиуса видимости для роботов
                 for (let i = 0; i < robot_coords.length; i++) {
                     let x = margin + robot_coords[i][0] * scaleX;
                     let y = margin + robot_coords[i][1] * scaleY;
                     p.noFill();
-                    p.stroke(100, 100, 255, 100); // Полупрозрачный синий
+                    p.stroke(100, 100, 255, 100);
                     p.strokeWeight(1);
-                    p.ellipse(x, y, visibilityRadius * scaleX * 2, visibilityRadius * scaleY * 2);
+                    p.ellipse(x, y, visibilityRadius * scale * 2, visibilityRadius * scale * 2);
                 }
 
-                // Рисуем роботов (синие круги)
                 for (let i = 0; i < robot_coords.length; i++) {
                     let x = margin + robot_coords[i][0] * scaleX;
                     let y = margin + robot_coords[i][1] * scaleY;
@@ -133,7 +131,6 @@
                     p.text(`R${i}`, x, y + 25);
                 }
 
-                // Рисуем задачи (красные квадраты)
                 for (let j = 0; j < task_coords.length; j++) {
                     let x = margin + task_coords[j][0] * scaleX;
                     let y = margin + task_coords[j][1] * scaleY;
@@ -144,7 +141,6 @@
                     p.text(`T${j}`, x, y + 25);
                 }
 
-                // Рисуем назначения (зелёные линии)
                 if (assignment.length > 0) {
                     p.stroke(0, 150, 0);
                     p.strokeWeight(2);
@@ -205,7 +201,7 @@
             })
             .then(data => {
                 assignment = data.assignment;
-                visibilityRadius = data.visibility_radius || 15.0; // Обновляем радиус, fallback на 15.0
+                visibilityRadius = data.visibility_radius || 15.0;
                 animProgress = 0;
                 document.getElementById('status').textContent = `Получены назначения. Полезность: ${data.utility.toFixed(2)}`;
                 console.log('Назначения:', assignment);
@@ -217,7 +213,6 @@
             });
         }
 
-        // Обновление анимации
         setInterval(() => {
             if (animProgress < ANIM_DURATION) {
                 animProgress++;
