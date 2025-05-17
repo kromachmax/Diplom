@@ -1,8 +1,15 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#endif
 #include <filesystem>
 #include <fstream>
 
@@ -12,15 +19,26 @@
 
 using json = nlohmann::json;
 
+void open_browser(const std::string& url) {
+#ifdef _WIN32
+    ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+#else
+    std::string command = "xdg-open " + url;
+    int result = system(command.c_str());
+    if (result != 0) {
+        std::cerr << "Warning: Failed to open browser with xdg-open\n";
+    }
+#endif
+}
 
 void generate_instance(
-    int n, int m,
-    const std::vector<Point>& robot_coords,
-    const std::vector<Point>& task_coords,
-    std::vector<std::vector<double>>& alpha_auction,
-    std::vector<std::vector<int>>& visibility_robots,
-    std::vector<std::vector<int>>& visibility_tasks
-    )
+        int n, int m,
+        const std::vector<Point>& robot_coords,
+        const std::vector<Point>& task_coords,
+        std::vector<std::vector<double>>& alpha_auction,
+        std::vector<std::vector<int>>& visibility_robots,
+        std::vector<std::vector<int>>& visibility_tasks
+        )
 {
     alpha_auction.assign(n, std::vector<double>(m, -std::numeric_limits<double>::infinity()));
     visibility_robots.assign(n, std::vector<int>(n, 0));
@@ -59,8 +77,12 @@ void generate_instance(
 
 int main()
 {
+#ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
+#else
+    std::setlocale(LC_ALL, "en_US.UTF-8");
+#endif
 
     AuctionAlgo<double> algo;
     PARAMETRS::min_utility = 1.0;
@@ -146,7 +168,7 @@ int main()
         return 1;
     }
 
-    ShellExecuteA(NULL, "open", "http://localhost:8000", NULL, NULL, SW_SHOWNORMAL);
+    open_browser("http://localhost:8000");
 
     std::cout << "Starting server at http://localhost:8000\n";
     svr.listen("localhost", 8000);
