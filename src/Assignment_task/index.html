@@ -89,10 +89,11 @@
             p.mousePressed = function() {
                 if (p.mouseY > document.getElementById('controls').offsetHeight && p.mouseX >= 0 && p.mouseX < p.width && p.mouseY < p.height) {
                     const margin = Math.min(p.width, p.height) * 0.05;
-                    const scaleX = (p.width - 2 * margin) / 100;
-                    const scaleY = (p.height - 2 * margin) / 100;
-                    const x = (p.mouseX - margin) / scaleX;
-                    const y = (p.mouseY - margin) / scaleY;
+                    const scale = Math.min(p.width - 2 * margin, p.height - 2 * margin) / 100; // Единый масштаб
+                    const offsetX = (p.width - (p.width - 2 * margin)) / 2; // Центрирование по X
+                    const offsetY = (p.height - (p.height - 2 * margin)) / 2; // Центрирование по Y
+                    const x = (p.mouseX - margin - offsetX) / scale;
+                    const y = (p.mouseY - margin - offsetY) / scale;
                     if (mode === 'robot') {
                         robot_coords.push([x, y]);
                         document.getElementById('status').textContent = `Добавлен робот ${robot_coords.length - 1} в (${x.toFixed(2)}, ${y.toFixed(2)})`;
@@ -108,22 +109,24 @@
                 p.background(255);
 
                 const margin = Math.min(p.width, p.height) * 0.05;
-                const scaleX = (p.width - 2 * margin) / 100;
-                const scaleY = (p.height - 2 * margin) / 100;
-                const scale = Math.min(scaleX, scaleY); // Единый масштаб для окружностей
+                const scale = Math.min(p.width - 2 * margin, p.height - 2 * margin) / 100; // Единый масштаб
+                const offsetX = (p.width - (p.width - 2 * margin)) / 2; // Центрирование по X
+                const offsetY = (p.height - (p.height - 2 * margin)) / 2; // Центрирование по Y
 
+                // Отрисовка радиусов видимости роботов
                 for (let i = 0; i < robot_coords.length; i++) {
-                    let x = margin + robot_coords[i][0] * scaleX;
-                    let y = margin + robot_coords[i][1] * scaleY;
+                    let x = margin + offsetX + robot_coords[i][0] * scale;
+                    let y = margin + offsetY + robot_coords[i][1] * scale;
                     p.noFill();
                     p.stroke(100, 100, 255, 100);
                     p.strokeWeight(1);
                     p.ellipse(x, y, visibilityRadius * scale * 2, visibilityRadius * scale * 2);
                 }
 
+                // Отрисовка роботов
                 for (let i = 0; i < robot_coords.length; i++) {
-                    let x = margin + robot_coords[i][0] * scaleX;
-                    let y = margin + robot_coords[i][1] * scaleY;
+                    let x = margin + offsetX + robot_coords[i][0] * scale;
+                    let y = margin + offsetY + robot_coords[i][1] * scale;
                     p.fill(100, 100, 255);
                     p.noStroke();
                     p.ellipse(x, y, 15, 15);
@@ -131,9 +134,10 @@
                     p.text(`R${i}`, x, y + 25);
                 }
 
+                // Отрисовка задач
                 for (let j = 0; j < task_coords.length; j++) {
-                    let x = margin + task_coords[j][0] * scaleX;
-                    let y = margin + task_coords[j][1] * scaleY;
+                    let x = margin + offsetX + task_coords[j][0] * scale;
+                    let y = margin + offsetY + task_coords[j][1] * scale;
                     p.fill(255, 100, 100);
                     p.noStroke();
                     p.rect(x - 10, y - 10, 20, 20);
@@ -141,15 +145,16 @@
                     p.text(`T${j}`, x, y + 25);
                 }
 
+                // Отрисовка назначений
                 if (assignment.length > 0) {
                     p.stroke(0, 150, 0);
                     p.strokeWeight(2);
                     for (let i = 0; i < robot_coords.length; i++) {
                         if (assignment[i] >= 0 && assignment[i] < task_coords.length) {
-                            let startX = margin + robot_coords[i][0] * scaleX;
-                            let startY = margin + robot_coords[i][1] * scaleY;
-                            let endX = margin + task_coords[assignment[i]][0] * scaleX;
-                            let endY = margin + task_coords[assignment[i]][1] * scaleY;
+                            let startX = margin + offsetX + robot_coords[i][0] * scale;
+                            let startY = margin + offsetY + robot_coords[i][1] * scale;
+                            let endX = margin + offsetX + task_coords[assignment[i]][0] * scale;
+                            let endY = margin + offsetY + task_coords[assignment[i]][1] * scale;
                             let t = Math.min(animProgress / ANIM_DURATION, 1);
                             let interpX = startX + (endX - startX) * t;
                             let interpY = startY + (endY - startY) * t;
