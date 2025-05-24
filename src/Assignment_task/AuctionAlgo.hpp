@@ -13,7 +13,7 @@ static double min_utility;
 static double max_utility;
 static double visibility_radius;
 const  double DISTANCE_OFFSET = 0.1;
-const  double epsilon = 1e-5;
+const  double epsilon = 1e-3;
 }
 
 // Структура для хранения координат
@@ -130,16 +130,11 @@ private:
                                        : T(0);
 
                 // Находим максимальную прибыль по доступным задачам
-                T max_profit = std::numeric_limits<T>::lowest();
+                T max_profit = T(0);
                 for (int j = 0; j < m; ++j)
                 {
                     T profit = alpha[i][j] - prices[j];
                     max_profit = std::max(max_profit, profit);
-                }
-
-                // Если робот неназначен, сравниваем с 0
-                if (assignment[i] == -1) {
-                    max_profit = std::max(max_profit, T(0));
                 }
 
                 // Проверяем, "счастлив" ли робот
@@ -179,6 +174,12 @@ private:
                     {
                         // Старому владельцу даём неназначение (фиктивную задачу)
                         assignment[current_owner] = -1;
+                    }
+
+                    if(assignment[i] != -1)
+                    {
+                        // Освобождаем старую задачу
+                        task_to_robot[assignment[i]] = -1;
                     }
 
                     // Новый робот получает новую задачу
