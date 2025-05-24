@@ -13,7 +13,7 @@ static double min_utility;
 static double max_utility;
 static double visibility_radius;
 const  double DISTANCE_OFFSET = 0.1;
-const  double epsilon = 1e-3;
+const  double epsilon = 1e-2;
 }
 
 // Структура для хранения координат

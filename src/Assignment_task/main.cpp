@@ -1,6 +1,11 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <random>
+#include <chrono>
+#include <QApplication>
+#include <QtCharts>
+
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
@@ -10,42 +15,35 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #endif
-#include <filesystem>
-#include <fstream>
 
 #include "AuctionAlgo.hpp"
 #include "HungarianAlgo.hpp"
-#include "httplib.h"
-#include "json.hpp"
 
-using json = nlohmann::json;
+using namespace std;
 
-void open_browser(const std::string& url) {
-#ifdef _WIN32
-    ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
-#else
-    std::string command = "xdg-open " + url;
-    int result = system(command.c_str());
-    if (result != 0) {
-        std::cerr << "Warning: Failed to open browser with xdg-open\n";
-    }
-#endif
-}
 
-void generate_instance(
+void generate_random_instance(
     int n, int m,
-    const std::vector<Point>& robot_coords,
-    const std::vector<Point>& task_coords,
-    std::vector<std::vector<double>>& alpha_auction,
-    std::vector<std::vector<int>>& visibility_robots
-    )
+    vector<vector<double>>& alpha_auction,
+    vector<vector<int>>& visibility_robots,
+    mt19937& gen)
 {
-    alpha_auction.assign(n, std::vector<double>(m, -std::numeric_limits<double>::infinity()));
-    visibility_robots.assign(n, std::vector<int>(n, 0));
+    uniform_real_distribution<double> coord_dist(0.0, 100.0);
+    alpha_auction.assign(n, vector<double>(m, -numeric_limits<double>::infinity()));
+    visibility_robots.assign(n, vector<int>(n, 0));
+
+    vector<Point> robot_coords(n);
+    for (int i = 0; i < n; ++i) {
+        robot_coords[i] = {coord_dist(gen), coord_dist(gen)};
+    }
+
+    vector<Point> task_coords(m);
+    for (int j = 0; j < m; ++j) {
+        task_coords[j] = {coord_dist(gen), coord_dist(gen)};
+    }
 
     for (int i = 0; i < n; ++i)
     {
-
         for (int j = 0; j < n; ++j)
         {
             if (i != j && calculate_distance(robot_coords[i], robot_coords[j]) <= PARAMETRS::visibility_radius) {
@@ -64,114 +62,118 @@ void generate_instance(
     }
 }
 
-int main()
+QChart* create_chart(const vector<int>& sizes,
+                     const vector<double>& auction_times,
+                     const vector<double>& hungarian_times)
 {
+    QChart *chart = new QChart();
+    chart->setTitle("Сравнение времени выполнения алгоритмов");
+    chart->setAnimationOptions(QChart::AllAnimations);
+
+    QLineSeries *auction_series = new QLineSeries();
+    auction_series->setName("Аукционный алгоритм");
+
+    QLineSeries *hungarian_series = new QLineSeries();
+    hungarian_series->setName("Венгерский алгоритм");
+
+    for (size_t i = 0; i < sizes.size(); ++i)
+    {
+        auction_series->append(sizes[i], auction_times[i]);
+        hungarian_series->append(sizes[i], hungarian_times[i]);
+    }
+
+    chart->addSeries(auction_series);
+    chart->addSeries(hungarian_series);
+
+    QValueAxis *axisX = new QValueAxis();
+    axisX->setTitleText("Размер задачи (n)");
+    axisX->setLabelFormat("%d");
+    axisX->setTickCount(sizes.size());
+    chart->addAxis(axisX, Qt::AlignBottom);
+    auction_series->attachAxis(axisX);
+    hungarian_series->attachAxis(axisX);
+
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Время выполнения (мс)");
+    axisY->setLabelFormat("%.2f");
+    chart->addAxis(axisY, Qt::AlignLeft);
+    auction_series->attachAxis(axisY);
+    hungarian_series->attachAxis(axisY);
+
+    return chart;
+}
+
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+
 #ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #else
-    std::setlocale(LC_ALL, "en_US.UTF-8");
+    setlocale(LC_ALL, "en_US.UTF-8");
 #endif
 
-    AuctionAlgo<double> algo;
+    const int min_size = 5;
+    const int max_size = 100;
+    const int step = 1;
+    const int num_repeats = 100;
+
+    random_device rd;
+    mt19937 gen(rd());
+
+    vector<int> sizes;
+    vector<double> auction_times_avg;
+    vector<double> hungarian_times_avg;
+
     PARAMETRS::min_utility = 1.0;
     PARAMETRS::max_utility = 30.0;
-    PARAMETRS::visibility_radius = 15.0;
+    PARAMETRS::visibility_radius = 40.0;
 
-    httplib::Server svr;
+    for (int n = min_size; n <= max_size; n += step)
+    {
+        int m = n;
+        sizes.push_back(n);
 
-    svr.Get("/", [](const httplib::Request&, httplib::Response& res) {
-        std::ifstream file("index.html");
-        if (file) {
-            std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-            res.set_content(content, "text/html");
-        } else {
-            res.status = 404;
-            res.set_content("File not found", "text/plain");
-        }
-    });
+        double auction_total = 0.0;
+        double hungarian_total = 0.0;
 
-    svr.Post("/run_auction", [&](const httplib::Request& req, httplib::Response& res) {
-        try {
-            json input = json::parse(req.body);
-            int n = input["n"].get<int>();
-            int m = input["m"].get<int>();
-            std::vector<Point> robot_coords(n);
-            std::vector<Point> task_coords(m);
-
-            std::cout << "Size: " << n << 'x' << m << '\n';
-
-            std::cout << "Robot_coords: \n";
-            for (int i = 0; i < n; ++i)
-            {
-                robot_coords[i] = {input["robot_coords"][i][0].get<double>(), input["robot_coords"][i][1].get<double>()};
-                std::cout << robot_coords[i].x << ' ' << robot_coords[i].y << '\n';
-            }
-
-            std::cout << "Task_coords: \n";
-            for (int j = 0; j < m; ++j)
-            {
-                task_coords[j] = {input["task_coords"][j][0].get<double>(), input["task_coords"][j][1].get<double>()};
-                std::cout << task_coords[j].x << ' ' << task_coords[j].y << '\n';
-            }
-
-            std::vector<std::vector<double>> alpha;
-            std::vector<std::vector<int>> visibility_robots;
-            generate_instance(n, m, robot_coords, task_coords, alpha, visibility_robots);
-
-            std::vector<int> auction_assignment;
-            double auction_utility = algo.Start(n, m, alpha, visibility_robots, PARAMETRS::epsilon, auction_assignment);
-
-            std::cout << "Auction assignment: ";
-            for (int i = 0; i < auction_assignment.size(); ++i) {
-                std::cout << auction_assignment[i] << " ";
-            }
-            std::cout << "\nAuction Utility: " << auction_utility << std::endl;
-
-            std::vector<int> hungarian_assignment;
-            std::vector<int> N_max(m, 1);
-            HungarianAlgo<double> hungarian_algo(n, m, alpha, N_max);
-            double hungarian_utility = hungarian_algo.Start(hungarian_assignment);
-
-            std::cout << "Hungarian assignment: ";
-            for (int i = 0; i < hungarian_assignment.size(); ++i) {
-                std::cout << hungarian_assignment[i] << " ";
-            }
-            std::cout << "\nHungarian Utility: " << hungarian_utility << std::endl;
-
-            json response;
-            response["auction_assignment"] = auction_assignment;
-            response["auction_utility"] = auction_utility;
-            response["hungarian_assignment"] = hungarian_assignment;
-            response["hungarian_utility"] = hungarian_utility;
-            response["visibility_radius"] = PARAMETRS::visibility_radius;
-
-            res.set_content(response.dump(), "application/json");
-        }
-        catch (const std::exception& e)
+        for (int repeat = 0; repeat < num_repeats; ++repeat)
         {
-            res.status = 500;
-            std::cerr << "Error: " << e.what() << std::endl;
-            res.set_content("{\"error\":\"" + std::string(e.what()) + "\"}", "application/json");
+            vector<vector<double>> alpha;
+            vector<vector<int>> visibility_robots;
+            generate_random_instance(n, m, alpha, visibility_robots, gen);
+
+            AuctionAlgo<double> algo;
+            vector<int> auction_assignment;
+
+            auto start = chrono::high_resolution_clock::now();
+            algo.Start(n, m, alpha, visibility_robots, PARAMETRS::epsilon, auction_assignment);
+            auto end = chrono::high_resolution_clock::now();
+            auction_total += chrono::duration_cast<chrono::microseconds>(end - start).count() / 1000.0;
+
+            vector<int> hungarian_assignment;
+            vector<int> N_max(m, 1);
+            HungarianAlgo<double> hungarian_algo(n, m, alpha, N_max);
+
+            start = chrono::high_resolution_clock::now();
+            hungarian_algo.Start(hungarian_assignment);
+            end = chrono::high_resolution_clock::now();
+            hungarian_total += chrono::duration_cast<chrono::microseconds>(end - start).count() / 1000.0;
         }
-    });
 
-    svr.Options("/run_auction", [](const httplib::Request&, httplib::Response& res) {
-        res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-        res.set_header("Access-Control-Allow-Headers", "Content-Type");
-        res.status = 200;
-    });
+        auction_times_avg.push_back(auction_total / num_repeats);
+        hungarian_times_avg.push_back(hungarian_total / num_repeats);
 
-    if (!std::filesystem::exists("index.html")) {
-        std::cerr << "Error: index.html not found in build folder\n";
-        return 1;
+        cout << "Размер: " << n << "x" << m
+             << " | Аукционный: " << auction_times_avg.back() << " мс"
+             << " | Венгерский: " << hungarian_times_avg.back() << " мс" << endl;
     }
 
-    open_browser("http://localhost:8000");
+    QChartView *chartView = new QChartView(create_chart(sizes, auction_times_avg, hungarian_times_avg));
+    chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->resize(800, 600);
+    chartView->show();
 
-    std::cout << "Starting server at http://localhost:8000\n";
-    svr.listen("localhost", 8000);
-
-    return 0;
+    return a.exec();
 }
