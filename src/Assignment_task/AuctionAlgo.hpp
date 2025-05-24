@@ -213,32 +213,44 @@ public:
         // Находим компоненты связности
         auto components = FindConnectedComponents(visibility_robots);
 
-        // Инициализация назначений
+        // Инициализация
         assignment.resize(n, -1);
         T total_utility = 0;
 
-        // Для каждой компоненты выполняем аукцион
+        // Для хранения максимальной полезности по каждой задаче
+        std::vector<T> max_task_utility(m, std::numeric_limits<T>::lowest());
+
+        // 1. Выполняем аукцион для всех компонент
         for (const auto& component : components)
         {
-            // Создаем подматрицу полезностей для этой компоненты
             std::vector<std::vector<T>> component_alpha;
-
             for (int robot : component) {
                 component_alpha.push_back(alpha[robot]);
             }
 
-            // Запускаем аукцион для компоненты
             std::vector<int> component_assignment;
+            RunningForComponent(component.size(), m, component_alpha,
+                                visibility_robots, epsilon, component_assignment);
 
-            total_utility += RunningForComponent(component.size(), m,
-                                                 component_alpha,
-                                                 visibility_robots,
-                                                 epsilon,
-                                                 component_assignment);
+            // Обновляем назначения и максимальные полезности
+            for (size_t i = 0; i < component.size(); ++i)
+            {
+                int robot = component[i];
+                int task = component_assignment[i];
+                assignment[robot] = task;
 
-            // Обновляем глобальное назначение
-            for (size_t i = 0; i < component.size(); ++i) {
-                assignment[component[i]] = component_assignment[i];
+                // Обновляем максимальную полезность для задачи
+                if (task != -1) {
+                    max_task_utility[task] = std::max(max_task_utility[task],
+                                                      alpha[robot][task]);
+                }
+            }
+        }
+
+        // 2. Суммируем только максимальные полезности
+        for (int task = 0; task < m; ++task) {
+            if (max_task_utility[task] > std::numeric_limits<T>::lowest()) {
+                total_utility += max_task_utility[task];
             }
         }
 

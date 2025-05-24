@@ -62,8 +62,10 @@ T HungarianAlgo<T>::Start(std::vector<int>& assignment)
 
     // Find maximum value in matrix
     T max_val = D[0][0];
-    for (std::size_t i = 0; i < num_rows; ++i) {
-        for (std::size_t j = 0; j < num_cols; ++j) {
+    for (std::size_t i = 0; i < num_rows; ++i)
+    {
+        for (std::size_t j = 0; j < num_cols; ++j)
+        {
             if (D[i][j] > max_val) {
                 max_val = D[i][j];
             }
@@ -72,8 +74,10 @@ T HungarianAlgo<T>::Start(std::vector<int>& assignment)
 
     // Create cost matrix (max_val - D[i][j])
     std::vector<std::vector<T>> cost(num_rows, std::vector<T>(num_cols));
-    for (std::size_t i = 0; i < num_rows; ++i) {
-        for (std::size_t j = 0; j < num_cols; ++j) {
+    for (std::size_t i = 0; i < num_rows; ++i)
+    {
+        for (std::size_t j = 0; j < num_cols; ++j)
+        {
             cost[i][j] = max_val - D[i][j];
         }
     }
@@ -85,7 +89,8 @@ T HungarianAlgo<T>::Start(std::vector<int>& assignment)
     std::vector<std::size_t> p(num_cols + 1, 0);
     std::vector<std::size_t> way(num_cols + 1, 0);
 
-    for (std::size_t i = 1; i <= num_rows; ++i) {
+    for (std::size_t i = 1; i <= num_rows; ++i)
+    {
         p[0] = i;
         std::size_t j0 = 0;
         std::vector<T> minv(num_cols + 1, INF);
@@ -97,22 +102,28 @@ T HungarianAlgo<T>::Start(std::vector<int>& assignment)
             T delta = INF;
             std::size_t j1 = 0;
 
-            for (std::size_t j = 1; j <= num_cols; ++j) {
-                if (!used[j]) {
+            for (std::size_t j = 1; j <= num_cols; ++j)
+            {
+                if (!used[j])
+                {
                     T cur = cost[i0-1][j-1] - u[i0] - v[j];
-                    if (cur < minv[j]) {
+                    if (cur < minv[j])
+                    {
                         minv[j] = cur;
                         way[j] = j0;
                     }
-                    if (minv[j] < delta) {
+                    if (minv[j] < delta)
+                    {
                         delta = minv[j];
                         j1 = j;
                     }
                 }
             }
 
-            for (std::size_t j = 0; j <= num_cols; ++j) {
-                if (used[j]) {
+            for (std::size_t j = 0; j <= num_cols; ++j)
+            {
+                if (used[j])
+                {
                     u[p[j]] += delta;
                     v[j] -= delta;
                 } else {
@@ -133,8 +144,10 @@ T HungarianAlgo<T>::Start(std::vector<int>& assignment)
     T total_profit = 0;
     assignment.resize(num_rows, -1);
 
-    for (std::size_t j = 1; j <= num_cols; ++j) {
-        if (p[j] > 0) {
+    for (std::size_t j = 1; j <= num_cols; ++j)
+    {
+        if (p[j] > 0)
+        {
             total_profit += D[p[j]-1][j-1];
             assignment[p[j]-1] = j - 1;
         }

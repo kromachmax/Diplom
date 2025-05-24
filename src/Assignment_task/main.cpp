@@ -14,6 +14,7 @@
 #include <fstream>
 
 #include "AuctionAlgo.hpp"
+#include "HungarianAlgo.hpp"
 #include "httplib.h"
 #include "json.hpp"
 
