@@ -32,17 +32,15 @@ void open_browser(const std::string& url) {
 }
 
 void generate_instance(
-        int n, int m,
-        const std::vector<Point>& robot_coords,
-        const std::vector<Point>& task_coords,
-        std::vector<std::vector<double>>& alpha_auction,
-        std::vector<std::vector<int>>& visibility_robots,
-        std::vector<std::vector<int>>& visibility_tasks
-        )
+    int n, int m,
+    const std::vector<Point>& robot_coords,
+    const std::vector<Point>& task_coords,
+    std::vector<std::vector<double>>& alpha_auction,
+    std::vector<std::vector<int>>& visibility_robots
+    )
 {
     alpha_auction.assign(n, std::vector<double>(m, -std::numeric_limits<double>::infinity()));
     visibility_robots.assign(n, std::vector<int>(n, 0));
-    visibility_tasks.assign(n, std::vector<int>(m, 0));
 
     for (int i = 0; i < n; ++i)
     {
@@ -53,24 +51,14 @@ void generate_instance(
                 visibility_robots[i][j] = 1;
             }
         }
-
-        for (int j = 0; j < m; ++j)
-        {
-            if (calculate_distance(robot_coords[i], task_coords[j]) <= PARAMETRS::visibility_radius) {
-                visibility_tasks[i][j] = 1;
-            }
-        }
     }
 
     for (int i = 0; i < n; ++i)
     {
         for (int j = 0; j < m; ++j)
         {
-            if (visibility_tasks[i][j])
-            {
-                double distance = calculate_distance(robot_coords[i], task_coords[j]);
-                alpha_auction[i][j] = PARAMETRS::max_utility / (distance + PARAMETRS::DISTANCE_OFFSET);
-            }
+            double distance = calculate_distance(robot_coords[i], task_coords[j]);
+            alpha_auction[i][j] = PARAMETRS::max_utility / (distance + PARAMETRS::DISTANCE_OFFSET);
         }
     }
 }
@@ -128,12 +116,10 @@ int main()
 
             std::vector<std::vector<double>> alpha;
             std::vector<std::vector<int>> visibility_robots;
-            std::vector<std::vector<int>> visibility_tasks;
-            generate_instance(n, m, robot_coords, task_coords, alpha, visibility_robots, visibility_tasks);
+            generate_instance(n, m, robot_coords, task_coords, alpha, visibility_robots);
 
             std::vector<int> auction_assignment;
-            double auction_utility = algo.Start(n, m, alpha, visibility_tasks, visibility_robots,
-                                                robot_coords, task_coords, PARAMETRS::epsilon, auction_assignment);
+            double auction_utility = algo.Start(n, m, alpha, visibility_robots, PARAMETRS::epsilon, auction_assignment);
 
             std::cout << "Auction assignment: ";
             for (int i = 0; i < auction_assignment.size(); ++i) {
