@@ -126,11 +126,24 @@ int main()
             for (int i = 0; i < auction_assignment.size(); ++i) {
                 std::cout << auction_assignment[i] << " ";
             }
-            std::cout << "\nUtility: " << auction_utility << std::endl;
+            std::cout << "\nAuction Utility: " << auction_utility << std::endl;
+
+            std::vector<int> hungarian_assignment;
+            std::vector<int> N_max(m, 1);
+            HungarianAlgo<double> hungarian_algo(n, m, alpha, N_max);
+            double hungarian_utility = hungarian_algo.Start(hungarian_assignment);
+
+            std::cout << "Hungarian assignment: ";
+            for (int i = 0; i < hungarian_assignment.size(); ++i) {
+                std::cout << hungarian_assignment[i] << " ";
+            }
+            std::cout << "\nHungarian Utility: " << hungarian_utility << std::endl;
 
             json response;
-            response["assignment"] = auction_assignment;
-            response["utility"] = auction_utility;
+            response["auction_assignment"] = auction_assignment;
+            response["auction_utility"] = auction_utility;
+            response["hungarian_assignment"] = hungarian_assignment;
+            response["hungarian_utility"] = hungarian_utility;
             response["visibility_radius"] = PARAMETRS::visibility_radius;
 
             res.set_content(response.dump(), "application/json");

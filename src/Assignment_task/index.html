@@ -41,14 +41,12 @@
         }
         #canvas-container {
             flex-grow: 1;
-            position: relative;
+            display: flex;
+            flex-direction: row;
             overflow: hidden;
         }
-        #auctionCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
+        #auctionCanvas, #hungarianCanvas {
+            width: 50%;
             height: 100%;
         }
     </style>
@@ -63,19 +61,23 @@
     </div>
     <div id="canvas-container">
         <div id="auctionCanvas"></div>
+        <div id="hungarianCanvas"></div>
     </div>
     <script>
         let robot_coords = [];
         let task_coords = [];
-        let assignment = [];
+        let auction_assignment = [];
+        let hungarian_assignment = [];
         let mode = 'robot';
-        let animProgress = 0;
+        let auctionAnimProgress = 0;
+        let hungarianAnimProgress = 0;
         const ANIM_DURATION = 30;
         let visibilityRadius = 15.0;
 
-        let sketch = function(p) {
+        // Auction Canvas Sketch
+        let auctionSketch = function(p) {
             p.setup = function() {
-                const canvas = p.createCanvas(p.windowWidth, p.windowHeight - document.getElementById('controls').offsetHeight);
+                const canvas = p.createCanvas(p.windowWidth / 2, p.windowHeight - document.getElementById('controls').offsetHeight);
                 canvas.parent('auctionCanvas');
                 p.textAlign(p.CENTER, p.CENTER);
                 p.textSize(12);
@@ -83,15 +85,15 @@
             };
 
             p.windowResized = function() {
-                p.resizeCanvas(p.windowWidth, p.windowHeight - document.getElementById('controls').offsetHeight);
+                p.resizeCanvas(p.windowWidth / 2, p.windowHeight - document.getElementById('controls').offsetHeight);
             };
 
             p.mousePressed = function() {
                 if (p.mouseY > document.getElementById('controls').offsetHeight && p.mouseX >= 0 && p.mouseX < p.width && p.mouseY < p.height) {
                     const margin = Math.min(p.width, p.height) * 0.05;
-                    const scale = Math.min(p.width - 2 * margin, p.height - 2 * margin) / 100; // Единый масштаб
-                    const offsetX = (p.width - (p.width - 2 * margin)) / 2; // Центрирование по X
-                    const offsetY = (p.height - (p.height - 2 * margin)) / 2; // Центрирование по Y
+                    const scale = Math.min(p.width - 2 * margin, p.height - 2 * margin) / 100;
+                    const offsetX = (p.width - (p.width - 2 * margin)) / 2;
+                    const offsetY = (p.height - (p.height - 2 * margin)) / 2;
                     const x = (p.mouseX - margin - offsetX) / scale;
                     const y = (p.mouseY - margin - offsetY) / scale;
                     if (mode === 'robot') {
@@ -101,72 +103,123 @@
                         task_coords.push([x, y]);
                         document.getElementById('status').textContent = `Добавлена задача ${task_coords.length - 1} в (${x.toFixed(2)}, ${y.toFixed(2)})`;
                     }
-                    assignment = [];
+                    auction_assignment = [];
+                    hungarian_assignment = [];
                 }
             };
 
             p.draw = function() {
                 p.background(255);
-
-                const margin = Math.min(p.width, p.height) * 0.05;
-                const scale = Math.min(p.width - 2 * margin, p.height - 2 * margin) / 100; // Единый масштаб
-                const offsetX = (p.width - (p.width - 2 * margin)) / 2; // Центрирование по X
-                const offsetY = (p.height - (p.height - 2 * margin)) / 2; // Центрирование по Y
-
-                // Отрисовка радиусов видимости роботов
-                for (let i = 0; i < robot_coords.length; i++) {
-                    let x = margin + offsetX + robot_coords[i][0] * scale;
-                    let y = margin + offsetY + robot_coords[i][1] * scale;
-                    p.noFill();
-                    p.stroke(100, 100, 255, 100);
-                    p.strokeWeight(1);
-                    p.ellipse(x, y, visibilityRadius * scale * 2, visibilityRadius * scale * 2);
-                }
-
-                // Отрисовка роботов
-                for (let i = 0; i < robot_coords.length; i++) {
-                    let x = margin + offsetX + robot_coords[i][0] * scale;
-                    let y = margin + offsetY + robot_coords[i][1] * scale;
-                    p.fill(100, 100, 255);
-                    p.noStroke();
-                    p.ellipse(x, y, 15, 15);
-                    p.fill(0);
-                    p.text(`R${i}`, x, y + 25);
-                }
-
-                // Отрисовка задач
-                for (let j = 0; j < task_coords.length; j++) {
-                    let x = margin + offsetX + task_coords[j][0] * scale;
-                    let y = margin + offsetY + task_coords[j][1] * scale;
-                    p.fill(255, 100, 100);
-                    p.noStroke();
-                    p.rect(x - 10, y - 10, 20, 20);
-                    p.fill(0);
-                    p.text(`T${j}`, x, y + 25);
-                }
-
-                // Отрисовка назначений
-                if (assignment.length > 0) {
-                    p.stroke(0, 150, 0);
-                    p.strokeWeight(2);
-                    for (let i = 0; i < robot_coords.length; i++) {
-                        if (assignment[i] >= 0 && assignment[i] < task_coords.length) {
-                            let startX = margin + offsetX + robot_coords[i][0] * scale;
-                            let startY = margin + offsetY + robot_coords[i][1] * scale;
-                            let endX = margin + offsetX + task_coords[assignment[i]][0] * scale;
-                            let endY = margin + offsetY + task_coords[assignment[i]][1] * scale;
-                            let t = Math.min(animProgress / ANIM_DURATION, 1);
-                            let interpX = startX + (endX - startX) * t;
-                            let interpY = startY + (endY - startY) * t;
-                            p.line(startX, startY, interpX, interpY);
-                        }
-                    }
-                    p.noStroke();
-                }
+                drawCanvas(p, auction_assignment, auctionAnimProgress, 'Аукционный алгоритм');
             };
         };
 
-        new p5(sketch, 'auctionCanvas');
+        // Hungarian Canvas Sketch
+        let hungarianSketch = function(p) {
+            p.setup = function() {
+                const canvas = p.createCanvas(p.windowWidth / 2, p.windowHeight - document.getElementById('controls').offsetHeight);
+                canvas.parent('hungarianCanvas');
+                p.textAlign(p.CENTER, p.CENTER);
+                p.textSize(12);
+                p.frameRate(60);
+            };
+
+            p.windowResized = function() {
+                p.resizeCanvas(p.windowWidth / 2, p.windowHeight - document.getElementById('controls').offsetHeight);
+            };
+
+            p.mousePressed = function() {
+                if (p.mouseY > document.getElementById('controls').offsetHeight && p.mouseX >= 0 && p.mouseX < p.width && p.mouseY < p.height) {
+                    const margin = Math.min(p.width, p.height) * 0.05;
+                    const scale = Math.min(p.width - 2 * margin, p.height - 2 * margin) / 100;
+                    const offsetX = (p.width - (p.width - 2 * margin)) / 2;
+                    const offsetY = (p.height - (p.height - 2 * margin)) / 2;
+                    const x = (p.mouseX - margin - offsetX) / scale;
+                    const y = (p.mouseY - margin - offsetY) / scale;
+                    if (mode === 'robot') {
+                        robot_coords.push([x, y]);
+                        document.getElementById('status').textContent = `Добавлен робот ${robot_coords.length - 1} в (${x.toFixed(2)}, ${y.toFixed(2)})`;
+                    } else {
+                        task_coords.push([x, y]);
+                        document.getElementById('status').textContent = `Добавлена задача ${task_coords.length - 1} в (${x.toFixed(2)}, ${y.toFixed(2)})`;
+                    }
+                    auction_assignment = [];
+                    hungarian_assignment = [];
+                }
+            };
+
+            p.draw = function() {
+                p.background(255);
+                drawCanvas(p, hungarian_assignment, hungarianAnimProgress, 'Венгерский алгоритм');
+            };
+        };
+
+        // Common drawing function for both canvases
+        function drawCanvas(p, assignment, animProgress, title) {
+            const margin = Math.min(p.width, p.height) * 0.05;
+            const scale = Math.min(p.width - 2 * margin, p.height - 2 * margin) / 100;
+            const offsetX = (p.width - (p.width - 2 * margin)) / 2;
+            const offsetY = (p.height - (p.height - 2 * margin)) / 2;
+
+            // Draw visibility radii for robots
+            for (let i = 0; i < robot_coords.length; i++) {
+                let x = margin + offsetX + robot_coords[i][0] * scale;
+                let y = margin + offsetY + robot_coords[i][1] * scale;
+                p.noFill();
+                p.stroke(100, 100, 255, 100);
+                p.strokeWeight(1);
+                p.ellipse(x, y, visibilityRadius * scale * 2, visibilityRadius * scale * 2);
+            }
+
+            // Draw robots
+            for (let i = 0; i < robot_coords.length; i++) {
+                let x = margin + offsetX + robot_coords[i][0] * scale;
+                let y = margin + offsetY + robot_coords[i][1] * scale;
+                p.fill(100, 100, 255);
+                p.noStroke();
+                p.ellipse(x, y, 15, 15);
+                p.fill(0);
+                p.text(`R${i}`, x, y + 25);
+            }
+
+            // Draw tasks
+            for (let j = 0; j < task_coords.length; j++) {
+                let x = margin + offsetX + task_coords[j][0] * scale;
+                let y = margin + offsetY + task_coords[j][1] * scale;
+                p.fill(255, 100, 100);
+                p.noStroke();
+                p.rect(x - 10, y - 10, 20, 20);
+                p.fill(0);
+                p.text(`T${j}`, x, y + 25);
+            }
+
+            // Draw assignments
+            if (assignment.length > 0) {
+                p.stroke(0, 150, 0);
+                p.strokeWeight(2);
+                for (let i = 0; i < robot_coords.length; i++) {
+                    if (assignment[i] >= 0 && assignment[i] < task_coords.length) {
+                        let startX = margin + offsetX + robot_coords[i][0] * scale;
+                        let startY = margin + offsetY + robot_coords[i][1] * scale;
+                        let endX = margin + offsetX + task_coords[assignment[i]][0] * scale;
+                        let endY = margin + offsetY + task_coords[assignment[i]][1] * scale;
+                        let t = Math.min(animProgress / ANIM_DURATION, 1);
+                        let interpX = startX + (endX - startX) * t;
+                        let interpY = startY + (endY - startY) * t;
+                        p.line(startX, startY, interpX, interpY);
+                    }
+                }
+                p.noStroke();
+            }
+
+            // Draw title
+            p.fill(0);
+            p.textSize(16);
+            p.text(title, p.width / 2, 30);
+        }
+
+        new p5(auctionSketch, 'auctionCanvas');
+        new p5(hungarianSketch, 'hungarianCanvas');
 
         function toggleMode(newMode) {
             mode = newMode;
@@ -176,7 +229,8 @@
         function clearCanvas() {
             robot_coords = [];
             task_coords = [];
-            assignment = [];
+            auction_assignment = [];
+            hungarian_assignment = [];
             document.getElementById('status').textContent = `Поле очищено. Режим: Добавление ${mode === 'robot' ? 'роботов' : 'задач'}`;
         }
 
@@ -205,11 +259,14 @@
                 return response.json();
             })
             .then(data => {
-                assignment = data.assignment;
+                auction_assignment = data.auction_assignment;
+                hungarian_assignment = data.hungarian_assignment;
                 visibilityRadius = data.visibility_radius || 15.0;
-                animProgress = 0;
-                document.getElementById('status').textContent = `Получены назначения. Полезность: ${data.utility.toFixed(2)}`;
-                console.log('Назначения:', assignment);
+                auctionAnimProgress = 0;
+                hungarianAnimProgress = 0;
+                document.getElementById('status').textContent = `Получены назначения. Аукционная полезность: ${data.auction_utility.toFixed(2)}, Венгерская полезность: ${data.hungarian_utility.toFixed(2)}`;
+                console.log('Аукционные назначения:', auction_assignment);
+                console.log('Венгерские назначения:', hungarian_assignment);
                 console.log('Радиус видимости:', visibilityRadius);
             })
             .catch(error => {
@@ -219,8 +276,11 @@
         }
 
         setInterval(() => {
-            if (animProgress < ANIM_DURATION) {
-                animProgress++;
+            if (auctionAnimProgress < ANIM_DURATION) {
+                auctionAnimProgress++;
+            }
+            if (hungarianAnimProgress < ANIM_DURATION) {
+                hungarianAnimProgress++;
             }
         }, 1000 / 60);
     </script>
