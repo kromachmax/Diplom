@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <queue>
 #include <cmath>
+#include <thread>
+#include <mutex>
 
 namespace PARAMETRS
 {
@@ -13,7 +15,7 @@ static double min_utility;
 static double max_utility;
 static double visibility_radius;
 const  double DISTANCE_OFFSET = 0.1;
-const  double epsilon = 1e-3;
+const  double epsilon = 1e-2;
 }
 
 // Структура для хранения координат
@@ -86,8 +88,7 @@ private:
     }
 
     T RunningForComponent(int n, int m,
-            std::vector<std::vector<T>>& alpha,
-            const std::vector<std::vector<int>>& visibility_robots,
+            const std::vector<std::vector<T>>& alpha,
             double epsilon,
             std::vector<int>& assignment)
     {
@@ -221,31 +222,44 @@ public:
         // Для хранения максимальной полезности по каждой задаче
         std::vector<T> max_task_utility(m, std::numeric_limits<T>::lowest());
 
+        std::mutex mtx;
+        std::vector<std::thread> threads;
+
         // 1. Выполняем аукцион для всех компонент
         for (const auto& component : components)
         {
+            std::size_t n = component.size();
             std::vector<std::vector<T>> component_alpha;
             for (int robot : component) {
                 component_alpha.push_back(alpha[robot]);
             }
 
-            std::vector<int> component_assignment;
-            RunningForComponent(component.size(), m, component_alpha,
-                                visibility_robots, epsilon, component_assignment);
+            threads.emplace_back([&, component_alpha, n]() {
 
-            // Обновляем назначения и максимальные полезности
-            for (size_t i = 0; i < component.size(); ++i)
-            {
-                int robot = component[i];
-                int task = component_assignment[i];
-                assignment[robot] = task;
+                std::vector<int> component_assignment;
+                RunningForComponent(n, m, component_alpha, epsilon, component_assignment);
 
-                // Обновляем максимальную полезность для задачи
-                if (task != -1) {
-                    max_task_utility[task] = std::max(max_task_utility[task],
-                                                      alpha[robot][task]);
+                std::lock_guard<std::mutex> lock(mtx);
+
+                // Обновляем назначения и максимальные полезности
+                for (size_t i = 0; i < component.size(); ++i)
+                {
+                    int robot = component[i];
+                    int task = component_assignment[i];
+                    assignment[robot] = task;
+
+                    // Обновляем максимальную полезность для задачи
+                    if (task != -1) {
+                        max_task_utility[task] = std::max(max_task_utility[task],
+                                                          alpha[robot][task]);
+                    }
                 }
-            }
+            });
+        }
+
+        for(auto& thread : threads)
+        {
+            thread.join();
         }
 
         // 2. Суммируем только максимальные полезности

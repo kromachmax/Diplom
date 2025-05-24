@@ -15,19 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets Charts Core Gui REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets Charts REQUIRED)
 
-find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIRS})
 find_library(GLPK glpk)
-
-# Находим LEMON
-find_library(LEMON_LIBRARY NAMES emon libemon HINTS /usr/local/lib)
-find_path(LEMON_INCLUDE_DIR lemon/list_graph.h HINTS /usr/local/include)
-
-if (NOT LEMON_LIBRARY OR NOT LEMON_INCLUDE_DIR)
-    message(FATAL_ERROR "LEMON library not found. Please install it.")
-else()
-    message(STATUS "Found LEMON: ${LEMON_LIBRARY}")
-endif()
 
 set(PROJECT_SOURCES
         main.cpp
@@ -57,23 +45,18 @@ else()
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    # Добавляем определение DEBUG
     add_definitions(-DDEBUG)
 else()
-    # Убираем определение DEBUG для других конфигураций (например, Release)
     remove_definitions(-DDEBUG)
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Release)
-    # Добавляем определение DEBUG
     add_definitions(-DRELEASE)
 else()
-    # Убираем определение DEBUG для других конфигураций (например, Release)
     remove_definitions(-DRELEASE)
 endif()
 
 target_include_directories(ColPlanAlgo PRIVATE ${LEMON_INCLUDE_DIR})
-# Подключение библиотек, включая Charts
 target_link_libraries(ColPlanAlgo PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Charts ${GLPK})
 
