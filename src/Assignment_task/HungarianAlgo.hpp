@@ -153,12 +153,6 @@ T HungarianAlgo<T>::Start(std::vector<int>& assignment)
         }
     }
 
-    // Вывод результатов
-    std::cout << "Назначения (робот -> задача): ";
-    for (int i = 0; i < num_rows; ++i) {
-        std::cout << assignment[i] << " ";
-    }
-
     answer = total_profit;
     return answer;
 }

@@ -205,10 +205,10 @@
                 return response.json();
             })
             .then(data => {
-                assignment = data.assignment;
+                assignment = data.auction_assignment;
                 visibilityRadius = data.visibility_radius || 15.0;
                 animProgress = 0;
-                document.getElementById('status').textContent = `Получены назначения. Полезность: ${data.utility.toFixed(2)}`;
+                document.getElementById('status').textContent = `Получены назначения. Полезность: ${data.auction_utility.toFixed(2)}`;
                 console.log('Назначения:', assignment);
                 console.log('Радиус видимости:', visibilityRadius);
             })
