@@ -76,7 +76,7 @@ int main()
     AuctionAlgo<double> algo;
     PARAMETRS::min_utility = 1.0;
     PARAMETRS::max_utility = 30.0;
-    PARAMETRS::visibility_radius = 15.0;
+    PARAMETRS::visibility_radius = 100.0;
 
     httplib::Server svr;
 

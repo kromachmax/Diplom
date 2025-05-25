@@ -87,7 +87,6 @@ private:
 
     T RunningForComponent(int n, int m,
             std::vector<std::vector<T>>& alpha,
-            const std::vector<std::vector<int>>& visibility_robots,
             double epsilon,
             std::vector<int>& assignment)
     {
@@ -230,8 +229,7 @@ public:
             }
 
             std::vector<int> component_assignment;
-            RunningForComponent(component.size(), m, component_alpha,
-                                visibility_robots, epsilon, component_assignment);
+            RunningForComponent(component.size(), m, component_alpha, epsilon, component_assignment);
 
             // Обновляем назначения и максимальные полезности
             for (size_t i = 0; i < component.size(); ++i)
@@ -249,7 +247,8 @@ public:
         }
 
         // 2. Суммируем только максимальные полезности
-        for (int task = 0; task < m; ++task) {
+        for (int task = 0; task < m; ++task)
+        {
             if (max_task_utility[task] > std::numeric_limits<T>::lowest()) {
                 total_utility += max_task_utility[task];
             }
