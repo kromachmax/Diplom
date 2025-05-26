@@ -142,6 +142,80 @@ QChart* create_accuracy_chart(const std::vector<double>& radii,
     return chart;
 }
 
+QChart* create_epsilon_time_chart(const std::vector<double>& epsilons,
+                                  const std::vector<double>& auction_times)
+{
+    QChart *chart = new QChart();
+    chart->setTitle("Зависимость времени выполнения от ε");
+    chart->setAnimationOptions(QChart::AllAnimations);
+
+    QLineSeries *auction_series = new QLineSeries();
+    auction_series->setName("Аукционный алгоритм");
+
+    for (size_t i = 0; i < epsilons.size(); ++i) {
+        auction_series->append(epsilons[i], auction_times[i]);
+    }
+
+    chart->addSeries(auction_series);
+
+    QLogValueAxis *axisX = new QLogValueAxis();
+    axisX->setTitleText("Значение ε");
+    axisX->setLabelFormat("%.2e");
+    axisX->setBase(10.0);
+    axisX->setRange(*std::min_element(epsilons.begin(), epsilons.end()),
+                    *std::max_element(epsilons.begin(), epsilons.end()));
+    chart->addAxis(axisX, Qt::AlignBottom);
+    auction_series->attachAxis(axisX);
+
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Время выполнения (мс)");
+    axisY->setLabelFormat("%.2f");
+    double min_time = *std::min_element(auction_times.begin(), auction_times.end());
+    double max_time = *std::max_element(auction_times.begin(), auction_times.end());
+    axisY->setRange(std::max(0.1, min_time * 0.5), max_time * 2.0);
+    chart->addAxis(axisY, Qt::AlignLeft);
+    auction_series->attachAxis(axisY);
+
+    return chart;
+}
+
+QChart* create_epsilon_accuracy_chart(const std::vector<double>& epsilons,
+                                      const std::vector<double>& accuracy_avg)
+{
+    QChart *chart = new QChart();
+    chart->setTitle("Зависимость точности от ε");
+    chart->setAnimationOptions(QChart::AllAnimations);
+
+    QLineSeries *accuracy_series = new QLineSeries();
+    accuracy_series->setName("Относительная точность аукционного алгоритма");
+
+    for (size_t i = 0; i < epsilons.size(); ++i) {
+        accuracy_series->append(epsilons[i], accuracy_avg[i]);
+    }
+
+    chart->addSeries(accuracy_series);
+
+    QLogValueAxis *axisX = new QLogValueAxis();
+    axisX->setTitleText("Значение ε");
+    axisX->setLabelFormat("%.2e");
+    axisX->setBase(10.0);
+    axisX->setRange(*std::min_element(epsilons.begin(), epsilons.end()),
+                    *std::max_element(epsilons.begin(), epsilons.end()));
+    chart->addAxis(axisX, Qt::AlignBottom);
+    accuracy_series->attachAxis(axisX);
+
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setTitleText("Относительная точность (%)");
+    axisY->setLabelFormat("%.2f");
+    double min_accuracy = *std::min_element(accuracy_avg.begin(), accuracy_avg.end());
+    double max_accuracy = *std::max_element(accuracy_avg.begin(), accuracy_avg.end());
+    axisY->setRange(std::max(0.0, min_accuracy * 0.9), std::max(100.0, max_accuracy * 1.1));
+    chart->addAxis(axisY, Qt::AlignLeft);
+    accuracy_series->attachAxis(axisY);
+
+    return chart;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -155,9 +229,9 @@ int main(int argc, char *argv[])
 #endif
 
     const int min_size = 5;
-    const int max_size = 50;
+    const int max_size = 300;
     const int step = 1;
-    const int num_repeats = 10;
+    const int num_repeats = 100;
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -166,16 +240,23 @@ int main(int argc, char *argv[])
     std::vector<double> auction_times_avg;
     std::vector<double> hungarian_times_avg;
 
+    std::vector<double> radii;
+    std::vector<double> accuracy_avg;
+
+    std::vector<double> epsilons;
+    std::vector<double> epsilon_times_avg;
+    std::vector<double> epsilon_accuracy_avg;
+
     PARAMETRS::min_utility = 1.0;
     PARAMETRS::max_utility = 100.0;
 
-    double fixed_visibility_radius = 15.0;
-    double fixed_size = 2;
-    double min_radius = 1;
-    double max_radius = 300;
-
-    std::vector<double> radii;
-    std::vector<double> accuracy_avg;
+    const double fixed_visibility_radius = 15.0;
+    const double fixed_size = 20;
+    const double fixed_size_eps = 50;
+    const double min_radius = 1;
+    const double max_radius = 100;
+    const double min_epsilon = 1e-6;
+    const double max_epsilon = 1.0;
 
     for (int n = min_size; n <= max_size; n += step)
     {
@@ -218,7 +299,7 @@ int main(int argc, char *argv[])
     }
 
 
-    for (double r = min_radius; r <= max_radius; r += step)
+    for (int r = min_radius; r <= max_radius; r += step)
     {
         radii.push_back(r);
         double accuracy_total = 0.0;
@@ -250,6 +331,47 @@ int main(int argc, char *argv[])
                   << " | Точность: " << accuracy_avg.back() << " %" << std::endl;
     }
 
+
+    for (double e = min_epsilon; e <= max_epsilon; e *= 10.0)
+    {
+        epsilons.push_back(e);
+        double auction_time_total = 0.0;
+        double accuracy_total = 0.0;
+
+        for (int repeat = 0; repeat < num_repeats; ++repeat)
+        {
+            std::vector<std::vector<double>> alpha;
+            std::vector<std::vector<int>> visibility_robots;
+            generate_random_instance(fixed_size_eps, fixed_size_eps, alpha, visibility_robots, fixed_visibility_radius, gen);
+
+            AuctionAlgo<double> algo;
+            std::vector<int> auction_assignment;
+
+            auto start = std::chrono::high_resolution_clock::now();
+            double auction_benefit = algo.Start(fixed_size_eps, fixed_size_eps, alpha, visibility_robots, e, auction_assignment);
+            auto end = std::chrono::high_resolution_clock::now();
+            auction_time_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+
+            std::vector<int> hungarian_assignment;
+            std::vector<int> N_max(fixed_size_eps, 1);
+            HungarianAlgo<double> hungarian_algo(fixed_size_eps, fixed_size_eps, alpha, N_max);
+            double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
+
+            if (hungarian_benefit > 0) {
+                accuracy_total += (auction_benefit / hungarian_benefit) * 100;
+            } else {
+                accuracy_total += 0.0;
+            }
+        }
+
+        epsilon_times_avg.push_back(auction_time_total / num_repeats);
+        epsilon_accuracy_avg.push_back(accuracy_total / num_repeats);
+
+        std::cout << "ε: " << e
+                  << " | Время аукционного: " << epsilon_times_avg.back() << " мс"
+                  << " | Точность: " << epsilon_accuracy_avg.back() << " %" << std::endl;
+    }
+
     QChartView *chartView = new QChartView(create_time_chart(sizes, auction_times_avg, hungarian_times_avg));
     chartView->setRenderHint(QPainter::Antialiasing);
     chartView->resize(800, 600);
@@ -259,6 +381,16 @@ int main(int argc, char *argv[])
     accuracyChartView->setRenderHint(QPainter::Antialiasing);
     accuracyChartView->resize(800, 600);
     accuracyChartView->show();
+
+    QChartView *epsilonTimeChartView = new QChartView(create_epsilon_time_chart(epsilons, epsilon_times_avg));
+    epsilonTimeChartView->setRenderHint(QPainter::Antialiasing);
+    epsilonTimeChartView->resize(800, 600);
+    epsilonTimeChartView->show();
+
+    QChartView *epsilonAccuracyChartView = new QChartView(create_epsilon_accuracy_chart(epsilons, epsilon_accuracy_avg));
+    epsilonAccuracyChartView->setRenderHint(QPainter::Antialiasing);
+    epsilonAccuracyChartView->resize(800, 600);
+    epsilonAccuracyChartView->show();
 
     return a.exec();
 }
