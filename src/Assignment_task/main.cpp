@@ -27,7 +27,7 @@ void generate_random_instance(
     double visibility_radius,
     std::mt19937& gen)
 {
-    std::uniform_real_distribution<double> coord_dist(0.0, 100.0);
+    std::uniform_real_distribution<double> coord_dist(PARAMETRS::min_utility, PARAMETRS::max_utility);
     alpha_auction.assign(n, std::vector<double>(m, -std::numeric_limits<double>::infinity()));
     visibility_robots.assign(n, std::vector<int>(n, 0));
 
@@ -167,12 +167,12 @@ int main(int argc, char *argv[])
     std::vector<double> hungarian_times_avg;
 
     PARAMETRS::min_utility = 1.0;
-    PARAMETRS::max_utility = 30.0;
+    PARAMETRS::max_utility = 100.0;
 
     double fixed_visibility_radius = 15.0;
-    double fixed_size = 100;
+    double fixed_size = 2;
     double min_radius = 1;
-    double max_radius = 100;
+    double max_radius = 300;
 
     std::vector<double> radii;
     std::vector<double> accuracy_avg;
@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
 
             AuctionAlgo<double> algo;
             std::vector<int> auction_assignment;
-            double auction_benefit = algo.Start(fixed_size, fixed_size, alpha, visibility_robots, 0.01 / fixed_size, auction_assignment);
+            double auction_benefit = algo.Start(fixed_size, fixed_size, alpha, visibility_robots, 1e-2, auction_assignment);
 
             std::vector<int> hungarian_assignment;
             std::vector<int> N_max(fixed_size, 1);
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
             double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
 
             if (hungarian_benefit > 0) {
-                accuracy_total += auction_benefit / hungarian_benefit * 100.0;
+                accuracy_total += auction_benefit / hungarian_benefit * 100;
             } else {
                 accuracy_total += 0.0;
             }

@@ -15,7 +15,7 @@ public:
     HungarianAlgo() noexcept = default;
     explicit HungarianAlgo(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
     void Update(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
-    [[nodiscard]] T Start(std::vector<int>&);
+    T Start(std::vector<int>&);
 
 private:
     [[nodiscard]] bool isUsedRows() const noexcept;
