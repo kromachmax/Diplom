@@ -88,9 +88,10 @@ private:
     }
 
     T RunningForComponent(int n, int m,
-            const std::vector<std::vector<T>>& alpha,
-            double epsilon,
-            std::vector<int>& assignment)
+                          const std::vector<std::vector<T>>& alpha,
+                          double epsilon,
+                          std::vector<int>& assignment,
+                          std::vector<double>& value_per_iteration)
     {
 
         // Инициализация цен задач
@@ -127,8 +128,8 @@ private:
             {
                 // Вычисляем прибыль для текущей задачи (если робот назначен)
                 T current_profit = (assignment[i] != -1)
-                                       ? alpha[i][assignment[i]] - prices[assignment[i]]
-                                       : T(0);
+                        ? alpha[i][assignment[i]] - prices[assignment[i]]
+                        : T(0);
 
                 // Находим максимальную прибыль по доступным задачам
                 T max_profit = T(0);
@@ -151,7 +152,7 @@ private:
                     profits.push_back(T(0)); // Прибыль для фиктивной задачи (неназначение)
 
                     auto [v_i, t_i] = FindMax(profits); // v_i - максимальная прибыль, t_i - индекс задачи
-                    if (t_i == static_cast<int>(profits.size()) - 1) {
+                            if (t_i == static_cast<int>(profits.size()) - 1) {
                         t_i = -1; // Робот выбирает фиктивную задачу (неназначение)
                     }
 
@@ -159,8 +160,8 @@ private:
                     profits[t_i == -1 ? profits.size() - 1 : t_i] = std::numeric_limits<T>::lowest();
                     auto [w_i, _] = FindMax(profits); // w_i - вторая по величине прибыль
 
-                    // Если робот выбирает фиктивную задачу, не меняем цены
-                    if (t_i == -1)
+                            // Если робот выбирает фиктивную задачу, не меняем цены
+                            if (t_i == -1)
                     {
                         if (assignment[i] != -1) {
                             task_to_robot[assignment[i]] = -1; // Освобождаем старую задачу
@@ -191,6 +192,15 @@ private:
                     prices[t_i] += (v_i - w_i + epsilon);
                 }
             }
+
+            T current_utility = 0;
+            for (int i = 0; i < n; ++i)
+            {
+                if (assignment[i] != -1) {
+                    current_utility += alpha[i][assignment[i]];
+                }
+            }
+            value_per_iteration.push_back(current_utility);
         }
 
         // Вычисление общей полезности (только для реальных задач)
@@ -211,6 +221,18 @@ public:
             const std::vector<std::vector<int>>& visibility_robots,
             double epsilon,
             std::vector<int>& assignment)
+    {
+        std::vector<double> value_per_iteration;
+        return Start(n, m, alpha, visibility_robots, epsilon, assignment, value_per_iteration);
+    }
+
+
+    T Start(int n, int m,
+            std::vector<std::vector<T>>& alpha,
+            const std::vector<std::vector<int>>& visibility_robots,
+            double epsilon,
+            std::vector<int>& assignment,
+            std::vector<double>& value_per_iteration)
     {
         // Находим компоненты связности
         auto components = FindConnectedComponents(visibility_robots);
@@ -237,7 +259,7 @@ public:
             threads.emplace_back([&, component_alpha, n]() {
 
                 std::vector<int> component_assignment;
-                RunningForComponent(n, m, component_alpha, epsilon, component_assignment);
+                RunningForComponent(n, m, component_alpha, epsilon, component_assignment, value_per_iteration);
 
                 std::lock_guard<std::mutex> lock(mtx);
 

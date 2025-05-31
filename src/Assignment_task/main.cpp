@@ -351,6 +351,78 @@ QChart* create_epsilon_accuracy_chart(const std::vector<double>& epsilons,
     return chart;
 }
 
+QChart* create_acc_per_iteration_chart(std::vector<std::vector<double>>& all_acc_per_iteration,
+                                       const std::vector<int>& fixed_sizes)
+{
+    QChart* chart = new QChart();
+    chart->setTitle("Точность алгоритма на каждой итерации");
+    chart->setAnimationOptions(QChart::AllAnimations);
+    chart->legend()->setVisible(true);
+    chart->legend()->setAlignment(Qt::AlignBottom);
+
+    QList<QColor> colors = {Qt::blue, Qt::red, Qt::green, Qt::magenta, Qt::cyan, Qt::darkYellow};
+
+    if (all_acc_per_iteration.size() != fixed_sizes.size()) {
+        qWarning() << "Количество кривых не соответствует количеству размеров";
+        return chart;
+    }
+
+    size_t max_iterations = 0;
+    for (size_t i = 0; i < all_acc_per_iteration.size(); ++i) {
+        if (all_acc_per_iteration[i].size() > max_iterations) {
+            max_iterations = all_acc_per_iteration[i].size();
+        }
+    }
+
+    double min_accuracy = 100.0;
+    double max_accuracy = 0.0;
+    for (const auto& accuracies : all_acc_per_iteration) {
+        for (const auto& acc : accuracies) {
+            if (acc < min_accuracy) min_accuracy = acc;
+            if (acc > max_accuracy) max_accuracy = acc;
+        }
+    }
+
+    min_accuracy = std::max(0.0, min_accuracy - 5.0);
+    max_accuracy = std::min(110.0, max_accuracy + 5.0);
+
+    for (size_t i = 0; i < fixed_sizes.size(); ++i) {
+        QLineSeries* series = new QLineSeries();
+        series->setName(QString("Размер %1").arg(fixed_sizes[i]));
+
+        QPen pen(colors[i % colors.size()]);
+        pen.setWidth(2);
+        series->setPen(pen);
+
+        for (size_t iter = 0; iter < all_acc_per_iteration[i].size(); ++iter) {
+            series->append(iter + 1, all_acc_per_iteration[i][iter]);
+        }
+
+        chart->addSeries(series);
+    }
+
+    QValueAxis* axisX = new QValueAxis();
+    axisX->setTitleText("Номер итерации");
+    axisX->setLabelFormat("%d");
+    axisX->setTickCount(std::min(max_iterations + 1, size_t(10)));
+    axisX->setRange(1, max_iterations);
+    chart->addAxis(axisX, Qt::AlignBottom);
+
+    QValueAxis* axisY = new QValueAxis();
+    axisY->setTitleText("Точность (%)");
+    axisY->setLabelFormat("%.1f");
+    axisY->setRange(min_accuracy, max_accuracy);
+    axisY->setTickCount(6);
+    chart->addAxis(axisY, Qt::AlignLeft);
+
+    for (auto series : chart->series()) {
+        series->attachAxis(axisX);
+        series->attachAxis(axisY);
+    }
+
+    return chart;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -384,6 +456,9 @@ int main(int argc, char *argv[])
     std::vector<std::vector<double>> all_epsilon_times_avg(fixed_visibility_radii.size());
     std::vector<std::vector<double>> all_epsilon_accuracy_avg(fixed_visibility_radii.size());
 
+    std::vector<int> fixed_sizes2 = {10, 30, 50, 100};
+    std::vector<std::vector<double>> all_value_per_iteration(fixed_sizes2.size());
+
     PARAMETRS::min_utility = 1.0;
     PARAMETRS::max_utility = 100.0;
 
@@ -393,173 +468,206 @@ int main(int argc, char *argv[])
     const double min_epsilon = 1e-6;
     const double max_epsilon = 1.0;
 
+//    {
+//        for(int i = min_size; i <= max_size; i += step) {
+//            sizes.push_back(i);
+//        }
+
+//        for(int i = 0; i < fixed_visibility_radii.size(); ++i)
+//        {
+//            auto& auction_times_avg = all_auction_times_avg[i];
+//            auto& hungarian_times_avg = all_hungarian_times_avg[i];
+//            double fixed_visibility_radius = fixed_visibility_radii[i];
+
+//            for(auto& n : sizes)
+//            {
+//                int m = n;
+
+//                double auction_total = 0.0;
+//                double hungarian_total = 0.0;
+
+//                for (int repeat = 0; repeat < num_repeats; ++repeat)
+//                {
+//                    std::vector<std::vector<double>> alpha;
+//                    std::vector<std::vector<int>> visibility_robots;
+//                    generate_random_instance(n, m, alpha, visibility_robots, fixed_visibility_radius, gen);
+
+//                    AuctionAlgo<double> algo;
+//                    std::vector<int> auction_assignment;
+
+//                    auto start = std::chrono::high_resolution_clock::now();
+//                    algo.Start(n, m, alpha, visibility_robots, 1.0 / n, auction_assignment);
+//                    auto end = std::chrono::high_resolution_clock::now();
+//                    auction_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+
+//                    std::vector<int> hungarian_assignment;
+//                    std::vector<int> N_max(m, 1);
+//                    HungarianAlgo<double> hungarian_algo(n, m, alpha, N_max);
+
+//                    start = std::chrono::high_resolution_clock::now();
+//                    hungarian_algo.Start(hungarian_assignment);
+//                    end = std::chrono::high_resolution_clock::now();
+//                    hungarian_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+//                }
+
+//                auction_times_avg.push_back(auction_total / num_repeats);
+//                hungarian_times_avg.push_back(hungarian_total / num_repeats);
+
+//                std::cout << "Радиус: " << fixed_visibility_radius << " | Размер: " << n << "x" << m
+//                          << " | Аукционный: " << auction_times_avg.back() << " мс"
+//                          << " | Венгерский: " << hungarian_times_avg.back() << " мс" << std::endl;
+//            }
+//        }
+//    }
+
+//    {
+//        for (int i = min_radius; i <= max_radius; ++i) {
+//            radii.push_back(i);
+//        }
+
+//        for(int i = 0; i < fixed_sizes.size(); ++i)
+//        {
+//            std::vector<double>& accuracy_avg = all_accuracy_avg[i];
+//            int fixed_size = fixed_sizes[i];
+
+//            for (auto& r : radii)
+//            {
+//                double accuracy_total = 0.0;
+
+//                for (int repeat = 0; repeat < num_repeats; ++repeat)
+//                {
+//                    std::vector<std::vector<double>> alpha;
+//                    std::vector<std::vector<int>> visibility_robots;
+//                    generate_random_instance(fixed_size, fixed_size, alpha, visibility_robots, r, gen);
+
+//                    AuctionAlgo<double> algo;
+//                    std::vector<int> auction_assignment;
+//                    double auction_benefit = algo.Start(fixed_size, fixed_size, alpha, visibility_robots, 1e-2, auction_assignment);
+
+//                    std::vector<int> hungarian_assignment;
+//                    std::vector<int> N_max(fixed_size, 1);
+//                    HungarianAlgo<double> hungarian_algo(fixed_size, fixed_size, alpha, N_max);
+//                    double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
+
+//                    if (hungarian_benefit > 0) {
+//                        accuracy_total += auction_benefit / hungarian_benefit * 100;
+//                    } else {
+//                        accuracy_total += 0.0;
+//                    }
+//                }
+
+//                accuracy_avg.push_back(accuracy_total / num_repeats);
+//                std::cout << "Размер: " << fixed_size << " | Радиус: " << r
+//                          << " | Точность: " << accuracy_avg.back() << " %" << std::endl;
+//            }
+//        }
+//    }
+
+//    {
+//        for(double e = min_epsilon; e <= max_epsilon; e *= 10.0)
+//        {
+//            epsilons.push_back(e);
+//        }
+
+//        for(int i = 0; i < fixed_visibility_radii.size(); ++i)
+//        {
+//            double fixed_visibility_radius = fixed_visibility_radii[i];
+//            auto& epsilon_times_avg = all_epsilon_times_avg[i];
+//            auto& epsilon_accuracy_avg = all_epsilon_accuracy_avg[i];
+
+//            for (auto& e : epsilons)
+//            {
+//                double auction_time_total = 0.0;
+//                double accuracy_total = 0.0;
+
+//                for (int repeat = 0; repeat < num_repeats; ++repeat)
+//                {
+//                    std::vector<std::vector<double>> alpha;
+//                    std::vector<std::vector<int>> visibility_robots;
+//                    generate_random_instance(fixed_size_eps, fixed_size_eps, alpha, visibility_robots, fixed_visibility_radius, gen);
+
+//                    AuctionAlgo<double> algo;
+//                    std::vector<int> auction_assignment;
+
+//                    auto start = std::chrono::high_resolution_clock::now();
+//                    double auction_benefit = algo.Start(fixed_size_eps, fixed_size_eps, alpha, visibility_robots, e, auction_assignment);
+//                    auto end = std::chrono::high_resolution_clock::now();
+//                    auction_time_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+
+//                    std::vector<int> hungarian_assignment;
+//                    std::vector<int> N_max(fixed_size_eps, 1);
+//                    HungarianAlgo<double> hungarian_algo(fixed_size_eps, fixed_size_eps, alpha, N_max);
+//                    double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
+
+//                    if (hungarian_benefit > 0) {
+//                        accuracy_total += (auction_benefit / hungarian_benefit) * 100;
+//                    } else {
+//                        accuracy_total += 0.0;
+//                    }
+//                }
+
+//                epsilon_times_avg.push_back(auction_time_total / num_repeats);
+//                epsilon_accuracy_avg.push_back(accuracy_total / num_repeats);
+
+//                std::cout << "Радиус: "  << fixed_visibility_radius << " | ε: " << e
+//                          << " | Время аукционного: " << epsilon_times_avg.back() << " мс"
+//                          << " | Точность: " << epsilon_accuracy_avg.back() << " %" << std::endl;
+//            }
+//        }
+//    }
+
     {
-        for(int i = min_size; i <= max_size; i += step) {
-            sizes.push_back(i);
-        }
-
-        for(int i = 0; i < fixed_visibility_radii.size(); ++i)
+        for(int i = 0; i < fixed_sizes2.size(); ++i)
         {
-            auto& auction_times_avg = all_auction_times_avg[i];
-            auto& hungarian_times_avg = all_hungarian_times_avg[i];
-            double fixed_visibility_radius = fixed_visibility_radii[i];
+            double fixed_radius = 150;
+            double size = fixed_sizes2[i];
+            auto& value_per_iteration = all_value_per_iteration[i];
 
-            for(auto& n : sizes)
+            std::vector<std::vector<double>> alpha;
+            std::vector<std::vector<int>> visibility_robots;
+            generate_random_instance(size, size, alpha, visibility_robots, fixed_radius, gen);
+
+            AuctionAlgo<double> algo;
+            std::vector<int> auction_assignment;
+            algo.Start(size, size, alpha, visibility_robots, 1e-2, auction_assignment, value_per_iteration);
+
+            std::vector<int> hungarian_assignment;
+            std::vector<int> N_max(size, 1);
+            HungarianAlgo<double> hungarian_algo(size, size, alpha, N_max);
+            double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
+
+            for(auto& val : value_per_iteration)
             {
-                int m = n;
-
-                double auction_total = 0.0;
-                double hungarian_total = 0.0;
-
-                for (int repeat = 0; repeat < num_repeats; ++repeat)
-                {
-                    std::vector<std::vector<double>> alpha;
-                    std::vector<std::vector<int>> visibility_robots;
-                    generate_random_instance(n, m, alpha, visibility_robots, fixed_visibility_radius, gen);
-
-                    AuctionAlgo<double> algo;
-                    std::vector<int> auction_assignment;
-
-                    auto start = std::chrono::high_resolution_clock::now();
-                    algo.Start(n, m, alpha, visibility_robots, 1.0 / n, auction_assignment);
-                    auto end = std::chrono::high_resolution_clock::now();
-                    auction_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
-
-                    std::vector<int> hungarian_assignment;
-                    std::vector<int> N_max(m, 1);
-                    HungarianAlgo<double> hungarian_algo(n, m, alpha, N_max);
-
-                    start = std::chrono::high_resolution_clock::now();
-                    hungarian_algo.Start(hungarian_assignment);
-                    end = std::chrono::high_resolution_clock::now();
-                    hungarian_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
-                }
-
-                auction_times_avg.push_back(auction_total / num_repeats);
-                hungarian_times_avg.push_back(hungarian_total / num_repeats);
-
-                std::cout << "Радиус: " << fixed_visibility_radius << " | Размер: " << n << "x" << m
-                          << " | Аукционный: " << auction_times_avg.back() << " мс"
-                          << " | Венгерский: " << hungarian_times_avg.back() << " мс" << std::endl;
+                val = (val / hungarian_benefit) * 100;
             }
         }
     }
 
-    {
-        for (int i = min_radius; i <= max_radius; ++i) {
-            radii.push_back(i);
-        }
 
-        for(int i = 0; i < fixed_sizes.size(); ++i)
-        {
-            std::vector<double>& accuracy_avg = all_accuracy_avg[i];
-            int fixed_size = fixed_sizes[i];
+//    QChartView *chartView = new QChartView(create_time_chart(sizes, all_auction_times_avg, all_hungarian_times_avg, fixed_visibility_radii));
+//    chartView->setRenderHint(QPainter::Antialiasing);
+//    chartView->resize(800, 600);
+//    chartView->show();
 
-            for (auto& r : radii)
-            {
-                double accuracy_total = 0.0;
+//    QChartView *accuracyChartView = new QChartView(create_accuracy_chart(radii, all_accuracy_avg, fixed_sizes));
+//    accuracyChartView->setRenderHint(QPainter::Antialiasing);
+//    accuracyChartView->resize(800, 600);
+//    accuracyChartView->show();
 
-                for (int repeat = 0; repeat < num_repeats; ++repeat)
-                {
-                    std::vector<std::vector<double>> alpha;
-                    std::vector<std::vector<int>> visibility_robots;
-                    generate_random_instance(fixed_size, fixed_size, alpha, visibility_robots, r, gen);
+//    QChartView *epsilonTimeChartView = new QChartView(create_epsilon_time_chart(epsilons, all_epsilon_times_avg, fixed_visibility_radii));
+//    epsilonTimeChartView->setRenderHint(QPainter::Antialiasing);
+//    epsilonTimeChartView->resize(800, 600);
+//    epsilonTimeChartView->show();
 
-                    AuctionAlgo<double> algo;
-                    std::vector<int> auction_assignment;
-                    double auction_benefit = algo.Start(fixed_size, fixed_size, alpha, visibility_robots, 1e-2, auction_assignment);
+//    QChartView *epsilonAccuracyChartView = new QChartView(create_epsilon_accuracy_chart(epsilons, all_epsilon_accuracy_avg, fixed_visibility_radii));
+//    epsilonAccuracyChartView->setRenderHint(QPainter::Antialiasing);
+//    epsilonAccuracyChartView->resize(800, 600);
+//    epsilonAccuracyChartView->show();
 
-                    std::vector<int> hungarian_assignment;
-                    std::vector<int> N_max(fixed_size, 1);
-                    HungarianAlgo<double> hungarian_algo(fixed_size, fixed_size, alpha, N_max);
-                    double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
-
-                    if (hungarian_benefit > 0) {
-                        accuracy_total += auction_benefit / hungarian_benefit * 100;
-                    } else {
-                        accuracy_total += 0.0;
-                    }
-                }
-
-                accuracy_avg.push_back(accuracy_total / num_repeats);
-                std::cout << "Размер: " << fixed_size << " | Радиус: " << r
-                          << " | Точность: " << accuracy_avg.back() << " %" << std::endl;
-            }
-        }
-    }
-
-    {
-        for(double e = min_epsilon; e <= max_epsilon; e *= 10.0)
-        {
-            epsilons.push_back(e);
-        }
-
-        for(int i = 0; i < fixed_visibility_radii.size(); ++i)
-        {
-            double fixed_visibility_radius = fixed_visibility_radii[i];
-            auto& epsilon_times_avg = all_epsilon_times_avg[i];
-            auto& epsilon_accuracy_avg = all_epsilon_accuracy_avg[i];
-
-            for (auto& e : epsilons)
-            {
-                double auction_time_total = 0.0;
-                double accuracy_total = 0.0;
-
-                for (int repeat = 0; repeat < num_repeats; ++repeat)
-                {
-                    std::vector<std::vector<double>> alpha;
-                    std::vector<std::vector<int>> visibility_robots;
-                    generate_random_instance(fixed_size_eps, fixed_size_eps, alpha, visibility_robots, fixed_visibility_radius, gen);
-
-                    AuctionAlgo<double> algo;
-                    std::vector<int> auction_assignment;
-
-                    auto start = std::chrono::high_resolution_clock::now();
-                    double auction_benefit = algo.Start(fixed_size_eps, fixed_size_eps, alpha, visibility_robots, e, auction_assignment);
-                    auto end = std::chrono::high_resolution_clock::now();
-                    auction_time_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
-
-                    std::vector<int> hungarian_assignment;
-                    std::vector<int> N_max(fixed_size_eps, 1);
-                    HungarianAlgo<double> hungarian_algo(fixed_size_eps, fixed_size_eps, alpha, N_max);
-                    double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
-
-                    if (hungarian_benefit > 0) {
-                        accuracy_total += (auction_benefit / hungarian_benefit) * 100;
-                    } else {
-                        accuracy_total += 0.0;
-                    }
-                }
-
-                epsilon_times_avg.push_back(auction_time_total / num_repeats);
-                epsilon_accuracy_avg.push_back(accuracy_total / num_repeats);
-
-                std::cout << "Радиус: "  << fixed_visibility_radius << " | ε: " << e
-                          << " | Время аукционного: " << epsilon_times_avg.back() << " мс"
-                          << " | Точность: " << epsilon_accuracy_avg.back() << " %" << std::endl;
-            }
-        }
-    }
-
-    QChartView *chartView = new QChartView(create_time_chart(sizes, all_auction_times_avg, all_hungarian_times_avg, fixed_visibility_radii));
-    chartView->setRenderHint(QPainter::Antialiasing);
-    chartView->resize(800, 600);
-    chartView->show();
-
-    QChartView *accuracyChartView = new QChartView(create_accuracy_chart(radii, all_accuracy_avg, fixed_sizes));
-    accuracyChartView->setRenderHint(QPainter::Antialiasing);
-    accuracyChartView->resize(800, 600);
-    accuracyChartView->show();
-
-    QChartView *epsilonTimeChartView = new QChartView(create_epsilon_time_chart(epsilons, all_epsilon_times_avg, fixed_visibility_radii));
-    epsilonTimeChartView->setRenderHint(QPainter::Antialiasing);
-    epsilonTimeChartView->resize(800, 600);
-    epsilonTimeChartView->show();
-
-    QChartView *epsilonAccuracyChartView = new QChartView(create_epsilon_accuracy_chart(epsilons, all_epsilon_accuracy_avg, fixed_visibility_radii));
-    epsilonAccuracyChartView->setRenderHint(QPainter::Antialiasing);
-    epsilonAccuracyChartView->resize(800, 600);
-    epsilonAccuracyChartView->show();
+    QChartView *AccuracyPerIterationChartView = new QChartView(create_acc_per_iteration_chart(all_value_per_iteration, fixed_sizes2));
+    AccuracyPerIterationChartView->setRenderHint(QPainter::Antialiasing);
+    AccuracyPerIterationChartView->resize(800, 600);
+    AccuracyPerIterationChartView->show();
 
     return a.exec();
 }
