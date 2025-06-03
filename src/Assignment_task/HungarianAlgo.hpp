@@ -15,9 +15,21 @@ public:
     HungarianAlgo() noexcept = default;
     explicit HungarianAlgo(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
     void Update(std::size_t n, std::size_t m, std::vector<std::vector<T>>& D, std::vector<int>& N);
-    T Start(std::vector<int>&);
+
+    // Основной метод без подсчета операций
+    T Start(std::vector<int>& assignment) {
+        int dummy_counter = 0;
+        return StartImpl(assignment, dummy_counter);
+    }
+
+    // Метод с подсчетом операций
+    T Start(std::vector<int>& assignment, int& operation_count) {
+        return StartImpl(assignment, operation_count);
+    }
 
 private:
+    T StartImpl(std::vector<int>&, int& operation_count);
+
     [[nodiscard]] bool isUsedRows() const noexcept;
     [[nodiscard]] bool isUsedCols() const noexcept;
     template<typename F>
@@ -54,7 +66,7 @@ HungarianAlgo<T>::HungarianAlgo(std::size_t n, std::size_t m, std::vector<std::v
 }
 
 template<typename T>
-T HungarianAlgo<T>::Start(std::vector<int>& assignment)
+T HungarianAlgo<T>::StartImpl(std::vector<int>& assignment, int& operation_count)
 {
     if (num_rows == 0 || num_cols == 0) {
         return T(0);
@@ -96,47 +108,66 @@ T HungarianAlgo<T>::Start(std::vector<int>& assignment)
         std::vector<T> minv(num_cols + 1, INF);
         std::vector<bool> used(num_cols + 1, false);
 
+        operation_count += 2;
+
         do {
             used[j0] = true;
             std::size_t i0 = p[j0];
             T delta = INF;
             std::size_t j1 = 0;
 
+            operation_count += 2;
+
             for (std::size_t j = 1; j <= num_cols; ++j)
             {
                 if (!used[j])
                 {
                     T cur = cost[i0-1][j-1] - u[i0] - v[j];
+                    operation_count += 3;
+
+
+                    operation_count += 1;
                     if (cur < minv[j])
                     {
                         minv[j] = cur;
                         way[j] = j0;
+                        operation_count += 2;
                     }
+
+                    operation_count += 1;
                     if (minv[j] < delta)
                     {
                         delta = minv[j];
                         j1 = j;
+                        operation_count += 2;
                     }
                 }
             }
 
             for (std::size_t j = 0; j <= num_cols; ++j)
             {
+                operation_count += 1;
+
                 if (used[j])
                 {
                     u[p[j]] += delta;
                     v[j] -= delta;
+                    operation_count += 2;
                 } else {
+                    operation_count += 1;
                     minv[j] -= delta;
                 }
             }
             j0 = j1;
+            operation_count += 2;
+
         } while (p[j0] != 0);
 
         do {
             std::size_t j1 = way[j0];
             p[j0] = p[j1];
             j0 = j1;
+            operation_count += 3;
         } while (j0 != 0);
     }
 

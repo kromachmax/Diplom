@@ -21,11 +21,11 @@
 
 
 void generate_random_instance(
-        int n, int m,
-        std::vector<std::vector<double>>& alpha_auction,
-        std::vector<std::vector<int>>& visibility_robots,
-        double visibility_radius,
-        std::mt19937& gen)
+    int n, int m,
+    std::vector<std::vector<double>>& alpha_auction,
+    std::vector<std::vector<int>>& visibility_robots,
+    double visibility_radius,
+    std::mt19937& gen)
 {
     std::uniform_real_distribution<double> coord_dist(PARAMETRS::min_utility, PARAMETRS::max_utility);
     alpha_auction.assign(n, std::vector<double>(m, -std::numeric_limits<double>::infinity()));
@@ -61,6 +61,7 @@ void generate_random_instance(
     }
 }
 
+
 QChart* create_time_chart(const std::vector<int>& sizes,
                           const std::vector<std::vector<double>>& auction_times,
                           const std::vector<std::vector<double>>& hungarian_times,
@@ -73,7 +74,7 @@ QChart* create_time_chart(const std::vector<int>& sizes,
     chart->legend()->setAlignment(Qt::AlignBottom);
 
     if (auction_times.size() != fixed_visibility_radii.size() ||
-            hungarian_times.size() != fixed_visibility_radii.size()) {
+        hungarian_times.size() != fixed_visibility_radii.size()) {
         qWarning() << "Несоответствие размеров входных данных";
         return chart;
     }
@@ -129,7 +130,7 @@ QChart* create_time_chart(const std::vector<int>& sizes,
     axisY->setRange(min_time * 0.9, max_time * 1.1);
     chart->addAxis(axisY, Qt::AlignLeft);
 
-    for (auto series : chart->series()) {
+    for (auto& series : chart->series()) {
         series->attachAxis(axisX);
         series->attachAxis(axisY);
     }
@@ -155,7 +156,7 @@ QChart* create_accuracy_chart(const std::vector<int>& radii,
     for (size_t size_idx = 0; size_idx < fixed_sizes.size(); ++size_idx)
     {
         QLineSeries *series = new QLineSeries();
-        series->setName(QString("Размер %1").arg(fixed_sizes[size_idx]));
+        series->setName(QString("N=%1").arg(fixed_sizes[size_idx]));
 
         if (all_accuracy_avg[size_idx].size() != radii.size())
         {
@@ -172,6 +173,20 @@ QChart* create_accuracy_chart(const std::vector<int>& radii,
         chart->addSeries(series);
     }
 
+    QLineSeries* asymptote = new QLineSeries();
+    asymptote->setName("Асимптота 100%");
+    QPen asymptotePen(Qt::gray);
+    asymptotePen.setWidth(2);
+    asymptotePen.setStyle(Qt::DashLine);
+    asymptote->setPen(asymptotePen);
+
+    for (size_t i = 0; i < radii.size(); ++i)
+    {
+        asymptote->append(radii[i], 100.0);
+    }
+
+    chart->addSeries(asymptote);
+
     QValueAxis *axisX = new QValueAxis();
     axisX->setTitleText("Радиус видимости");
     axisX->setLabelFormat("%d");
@@ -186,7 +201,7 @@ QChart* create_accuracy_chart(const std::vector<int>& radii,
     axisY->setTickInterval(10.0);
     chart->addAxis(axisY, Qt::AlignLeft);
 
-    for (auto series : chart->series())
+    for (auto& series : chart->series())
     {
         series->attachAxis(axisX);
         series->attachAxis(axisY);
@@ -198,6 +213,7 @@ QChart* create_accuracy_chart(const std::vector<int>& radii,
     return chart;
 }
 
+
 QChart* create_epsilon_time_chart(const std::vector<double>& epsilons,
                                   const std::vector<std::vector<double>>& auction_times,
                                   const std::vector<double>& fixed_visibility_radii)
@@ -208,7 +224,8 @@ QChart* create_epsilon_time_chart(const std::vector<double>& epsilons,
     chart->legend()->setVisible(true);
     chart->legend()->setAlignment(Qt::AlignBottom);
 
-    if (auction_times.size() != fixed_visibility_radii.size()) {
+    if (auction_times.size() != fixed_visibility_radii.size())
+    {
         qWarning() << "Несоответствие размеров auction_times и fixed_visibility_radii";
         return chart;
     }
@@ -224,7 +241,8 @@ QChart* create_epsilon_time_chart(const std::vector<double>& epsilons,
         pen.setWidth(2);
         series->setPen(pen);
 
-        for (size_t i = 0; i < epsilons.size(); ++i) {
+        for (size_t i = 0; i < epsilons.size(); ++i)
+        {
             series->append(epsilons[i], auction_times[radius_idx][i]);
         }
 
@@ -254,38 +272,31 @@ QChart* create_epsilon_time_chart(const std::vector<double>& epsilons,
         if (current_max > max_time) max_time = current_max;
     }
 
-    double rounded_min = std::floor(std::max(0.1, min_time * 0.9) / 10.0) * 10.0;
-    double rounded_max = std::ceil((max_time * 1.1) / 10.0) * 10.0;
-    axisY->setRange(rounded_min, rounded_max);
-
+    double rounded_min = std::floor(std::max(0.0, min_time * 0.9) / 5.0) * 5.0;
+    double rounded_max = std::ceil(max_time * 1.1 / 5.0) * 5.0;
     double range = rounded_max - rounded_min;
+
     double tick_interval;
-    if (range < 50.0) {
+    if (range <= 10.0) {
+        tick_interval = 1.0;
+    }
+    else if (range <= 50.0) {
         tick_interval = 5.0;
     }
-    else if (range < 500.0) {
+    else {
         tick_interval = 10.0;
     }
-    else if (range < 1000.0) {
-        tick_interval = 50.0;
-    }
-    else {
-        tick_interval = 100.0;
-    }
+
+    int num_ticks = static_cast<int>(std::ceil(range / tick_interval)) + 1;
+    rounded_max = rounded_min + (num_ticks - 1) * tick_interval;
+
+    axisY->setRange(rounded_min, rounded_max);
     axisY->setTickInterval(tick_interval);
+    axisY->setTickCount(num_ticks);
 
-    int tick_count = static_cast<int>((rounded_max - rounded_min) / tick_interval) + 1;
-    if (tick_count > 10)
-    {
-        tick_interval = (rounded_max - rounded_min) / (tick_count - 1);
-        axisY->setTickInterval(tick_interval);
-    }
-
-    axisY->setTickCount(tick_count);
-    axisY->setMinorTickCount(4);
     chart->addAxis(axisY, Qt::AlignLeft);
 
-    for (auto series : chart->series())
+    for (auto& series : chart->series())
     {
         series->attachAxis(axisX);
         series->attachAxis(axisY);
@@ -293,6 +304,7 @@ QChart* create_epsilon_time_chart(const std::vector<double>& epsilons,
 
     return chart;
 }
+
 
 QChart* create_epsilon_accuracy_chart(const std::vector<double>& epsilons,
                                       const std::vector<std::vector<double>>& all_accuracy_avg,
@@ -322,6 +334,20 @@ QChart* create_epsilon_accuracy_chart(const std::vector<double>& epsilons,
         chart->addSeries(series);
     }
 
+    QLineSeries* asymptote = new QLineSeries();
+    asymptote->setName("Асимптота 100%");
+    QPen asymptotePen(Qt::gray);
+    asymptotePen.setWidth(2);
+    asymptotePen.setStyle(Qt::DashLine);
+    asymptote->setPen(asymptotePen);
+
+    for (size_t i = 0; i < epsilons.size(); ++i)
+    {
+        asymptote->append(epsilons[i], 100.0);
+    }
+
+    chart->addSeries(asymptote);
+
     QLogValueAxis *axisX = new QLogValueAxis();
     axisX->setTitleText("Значение ε");
     axisX->setLabelFormat("%.2e");
@@ -334,15 +360,16 @@ QChart* create_epsilon_accuracy_chart(const std::vector<double>& epsilons,
     axisY->setTitleText("Относительная точность (%)");
     axisY->setLabelFormat("%.1f");
 
-    double rounded_min = 50.0;
+    double rounded_min = 70.0;
     double rounded_max = 110.0;
     axisY->setRange(rounded_min, rounded_max);
 
     double tick_interval = 10.0;
     axisY->setTickInterval(tick_interval);
+    axisY->setTickCount(5);
     chart->addAxis(axisY, Qt::AlignLeft);
 
-    for (auto series : chart->series())
+    for (auto& series : chart->series())
     {
         series->attachAxis(axisX);
         series->attachAxis(axisY);
@@ -350,6 +377,7 @@ QChart* create_epsilon_accuracy_chart(const std::vector<double>& epsilons,
 
     return chart;
 }
+
 
 QChart* create_acc_per_iteration_chart(std::vector<std::vector<double>>& all_acc_per_iteration,
                                        const std::vector<int>& fixed_sizes)
@@ -377,23 +405,10 @@ QChart* create_acc_per_iteration_chart(std::vector<std::vector<double>>& all_acc
         }
     }
 
-    double min_accuracy = 100.0;
-    double max_accuracy = 0.0;
-    for (const auto& accuracies : all_acc_per_iteration)
-    {
-        for (const auto& acc : accuracies)
-        {
-            if (acc < min_accuracy) min_accuracy = acc;
-            if (acc > max_accuracy) max_accuracy = acc;
-        }
-    }
-    min_accuracy = std::max(0.0, min_accuracy - 5.0);
-    max_accuracy = std::min(110.0, max_accuracy + 5.0);
-
     for (size_t i = 0; i < fixed_sizes.size(); ++i)
     {
         QLineSeries* series = new QLineSeries();
-        series->setName(QString("Размер %1").arg(fixed_sizes[i]));
+        series->setName(QString("N=%1").arg(fixed_sizes[i]));
 
         QPen pen(colors[i % colors.size()]);
         pen.setWidth(2);
@@ -403,17 +418,22 @@ QChart* create_acc_per_iteration_chart(std::vector<std::vector<double>>& all_acc
             series->append(iter + 1, all_acc_per_iteration[i][iter]);
         }
 
-        if (all_acc_per_iteration[i].size() < max_iterations && !all_acc_per_iteration[i].empty())
-        {
-            double last_accuracy = all_acc_per_iteration[i].back();
-            for (size_t iter = all_acc_per_iteration[i].size(); iter < max_iterations; ++iter)
-            {
-                series->append(iter + 1, last_accuracy);
-            }
-        }
-
         chart->addSeries(series);
     }
+
+    QLineSeries* asymptote = new QLineSeries();
+    asymptote->setName("Асимптота 100%");
+    QPen asymptotePen(Qt::gray);
+    asymptotePen.setWidth(2);
+    asymptotePen.setStyle(Qt::DashLine);
+    asymptote->setPen(asymptotePen);
+
+    for (size_t iter = 1; iter <= max_iterations; ++iter)
+    {
+        asymptote->append(iter, 100.0);
+    }
+
+    chart->addSeries(asymptote);
 
     QValueAxis* axisX = new QValueAxis();
     axisX->setTitleText("Номер итерации");
@@ -425,11 +445,11 @@ QChart* create_acc_per_iteration_chart(std::vector<std::vector<double>>& all_acc
     QValueAxis* axisY = new QValueAxis();
     axisY->setTitleText("Точность (%)");
     axisY->setLabelFormat("%.1f");
-    axisY->setRange(min_accuracy, max_accuracy);
-    axisY->setTickCount(6);
+    axisY->setRange(70.0, 110.0);
+    axisY->setTickCount(5);
     chart->addAxis(axisY, Qt::AlignLeft);
 
-    for (auto series : chart->series())
+    for (auto& series : chart->series())
     {
         series->attachAxis(axisX);
         series->attachAxis(axisY);
@@ -477,11 +497,11 @@ int main(int argc, char *argv[])
     PARAMETRS::min_utility = 1.0;
     PARAMETRS::max_utility = 100.0;
 
-    const double fixed_size_eps = 50;
+    const double fixed_size_eps = 80;
     const double min_radius = 5;
     const double max_radius = 100;
-    const double min_epsilon = 1e-6;
-    const double max_epsilon = 1.0;
+    const double min_epsilon = 1e-5;
+    const double max_epsilon = 10.0;
 
     {
         for(int i = min_size; i <= max_size; i += step) {
@@ -579,9 +599,11 @@ int main(int argc, char *argv[])
     }
 
     {
-        for(double e = min_epsilon; e <= max_epsilon; e *= 10.0)
+        double e = min_epsilon;
+        while(e <= max_epsilon)
         {
             epsilons.push_back(e);
+            e *= 10.0;
         }
 
         for(int i = 0; i < fixed_visibility_radii.size(); ++i)
@@ -634,55 +656,89 @@ int main(int argc, char *argv[])
     {
         for(int i = 0; i < fixed_sizes2.size(); ++i)
         {
-            double fixed_radius = 150;
-            double size = fixed_sizes2[i];
-            auto& value_per_iteration = all_value_per_iteration[i];
+            std::vector<int> count_per_iteration;
 
-            std::vector<std::vector<double>> alpha;
-            std::vector<std::vector<int>> visibility_robots;
-            generate_random_instance(size, size, alpha, visibility_robots, fixed_radius, gen);
-
-            AuctionAlgo<double> algo;
-            std::vector<int> auction_assignment;
-            algo.Start(size, size, alpha, visibility_robots, 1e-2, auction_assignment, value_per_iteration);
-
-            std::vector<int> hungarian_assignment;
-            std::vector<int> N_max(size, 1);
-            HungarianAlgo<double> hungarian_algo(size, size, alpha, N_max);
-            double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
-
-            for(auto& val : value_per_iteration)
+            for(int k = 0; k < 1; ++k)
             {
-                val = (val / hungarian_benefit) * 100;
+                double fixed_radius = 200;
+                double size = fixed_sizes2[i];
+                std::vector<double> value_per_iteration;
+
+                std::vector<std::vector<double>> alpha;
+                std::vector<std::vector<int>> visibility_robots;
+                generate_random_instance(size, size, alpha, visibility_robots, fixed_radius, gen);
+
+                AuctionAlgo<double> algo;
+                std::vector<int> auction_assignment;
+                algo.Start(size, size, alpha, visibility_robots, 1e-2, auction_assignment, value_per_iteration);
+
+                std::vector<int> hungarian_assignment;
+                std::vector<int> N_max(size, 1);
+                HungarianAlgo<double> hungarian_algo(size, size, alpha, N_max);
+                double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
+
+                for(auto& val : value_per_iteration)
+                {
+                    val = (val / hungarian_benefit) * 100;
+                }
+
+                all_value_per_iteration[i].resize(std::max(value_per_iteration.size(), all_value_per_iteration.size()));
+                count_per_iteration.resize(std::max(value_per_iteration.size(), all_value_per_iteration.size()));
+
+                for(int j = 0; j < std::min(all_value_per_iteration[i].size(), value_per_iteration.size()); ++j)
+                {
+                    all_value_per_iteration[i][j] += value_per_iteration[j];
+                    count_per_iteration[j]++;
+                }
+            }
+
+            for(int j = 0; j < all_value_per_iteration[i].size(); ++j)
+            {
+                all_value_per_iteration[i][j] /= count_per_iteration[j];
             }
         }
     }
 
 
+    int completedCharts = 0;
+
+    auto saveChart = [&completedCharts](QChartView* chartView, const QString& fileName)
+    {
+        chartView->setRenderHint(QPainter::Antialiasing);
+        chartView->resize(800, 600);
+        chartView->show();
+
+        QTimer::singleShot(2000, [chartView, fileName, &completedCharts]() {
+            QPixmap pixmap = chartView->grab();
+            bool saved = pixmap.save(fileName, "PNG");
+            if (saved)
+            {
+                QFile file(fileName);
+
+                if (file.open(QIODevice::ReadOnly))
+                {
+                    completedCharts++;
+                    std::cout << fileName.toStdString() << ", size: " << file.size() << " byte";
+                    file.close();
+                }
+            }
+        });
+    };
+
     QChartView *chartView = new QChartView(create_time_chart(sizes, all_auction_times_avg, all_hungarian_times_avg, fixed_visibility_radii));
-    chartView->setRenderHint(QPainter::Antialiasing);
-    chartView->resize(800, 600);
-    chartView->show();
+    saveChart(chartView, "time_chart.png");
 
     QChartView *accuracyChartView = new QChartView(create_accuracy_chart(radii, all_accuracy_avg, fixed_sizes));
-    accuracyChartView->setRenderHint(QPainter::Antialiasing);
-    accuracyChartView->resize(800, 600);
-    accuracyChartView->show();
+    saveChart(accuracyChartView, "accuracy_chart.png");
 
     QChartView *epsilonTimeChartView = new QChartView(create_epsilon_time_chart(epsilons, all_epsilon_times_avg, fixed_visibility_radii));
-    epsilonTimeChartView->setRenderHint(QPainter::Antialiasing);
-    epsilonTimeChartView->resize(800, 600);
-    epsilonTimeChartView->show();
+    saveChart(epsilonTimeChartView, "epsilon_time_chart.png");
 
     QChartView *epsilonAccuracyChartView = new QChartView(create_epsilon_accuracy_chart(epsilons, all_epsilon_accuracy_avg, fixed_visibility_radii));
-    epsilonAccuracyChartView->setRenderHint(QPainter::Antialiasing);
-    epsilonAccuracyChartView->resize(800, 600);
-    epsilonAccuracyChartView->show();
+    saveChart(epsilonAccuracyChartView, "epsilon_accuracy_chart.png");
 
     QChartView *AccuracyPerIterationChartView = new QChartView(create_acc_per_iteration_chart(all_value_per_iteration, fixed_sizes2));
-    AccuracyPerIterationChartView->setRenderHint(QPainter::Antialiasing);
-    AccuracyPerIterationChartView->resize(800, 600);
-    AccuracyPerIterationChartView->show();
+    saveChart(AccuracyPerIterationChartView, "accuracy_per_iteration_chart.png");
 
     return a.exec();
 }
