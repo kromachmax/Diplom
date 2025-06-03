@@ -1,0 +1,102 @@
+%%% Титульник отчета по практике / Practice report title 
+%%
+%% добавить лист в pdf-навигацию 
+%% add to pdf navigation menu
+%%
+\pdfbookmark[-1]{\pdfTitle}{tit}
+%%
+\thispagestyle{empty}%
+\makeatletter
+\newgeometry{top=2cm,bottom=2cm,left=3cm,right=1cm,headsep=0cm,footskip=0cm}
+\savegeometry{NoFoot}%
+\makeatother
+
+
+% TODO Exact match of font size
+%{\centering%
+%	\footnotesize
+%	\MakeUppercase{Федеральное государственное автономное образовательное учреждение\\высшего образования}\\%
+%		{\bfseries <<\SPbPU>>\\%
+%			\institute\\%
+%			\School}
+%}
+
+{\centering%
+	\small%
+	\MakeUppercase{\SPbPUOfficialPrefix}\\
+	{\bfseries %2020 - указание на изменения, которые могут быть введены в 2020 году
+	<<\MakeUppercase{\SPbPU}>>\\%
+	\MakeUppercase{ФИЗИКО-МЕХАНИЧЕСКИЙ ИНСТИТУТ}\\
+	\MakeUppercase{ВЫСШАЯ ШКОЛА ПРИКЛАДНОЙ МАТЕМАТИКИ И ВЫЧИСЛИТЕЛЬНОЙ ФИЗИКИ}
+	}
+\par}%
+	
+
+\vspace{0pt plus1fill} %число перед fill = кратность относительно некоторого расстояния fill, кусками которого заполнены пустые места
+
+
+\noindent
+
+
+%\vspace{0pt plus2fill} %
+
+
+{\centering%
+	{\bfseries{} 
+	Отчет о прохождении преддипломной практики\\
+	на тему: <<Децентрализованное решение задачи о назначениях целей группе роботов>>}\\
+
+\intervalS\normalfont%
+
+	\uline{Кромачев Максим Александрович , гр. 5030102/10201}%
+
+\intervalS\normalfont%
+
+\par}%
+
+%\intervalS% %ОБЯЗАТЕЛЬНО ДОБАВИТЬ ОТСТУП, ЕСЛИ ХВАТАЕТ МЕСТА
+
+
+{\noindent {\bfseries Направление подготовки:} {\expandafter \ulined 01.03.02 Прикладная математика и информатика}.}\par
+
+
+{\noindent {\bfseries Место прохождения практики:} {\expandafter \ulined СПБПУ, ФизМех, ВШПМиВФ}.} % включая фактический адрес для практики в сторонней организации по договору
+
+
+{\noindent {\bfseries Сроки практики:} \uline{с 02.02.25 по 28.05.25.}}\par
+
+
+{\noindent {\bfseries Руководитель практики от \SPbPUOfficialShort:}} {\expandafter \ulined \SupervisorFull, \SupervisorJob, \SupervisorDegree.} %Ф.И.О., должность, степень
+
+
+
+{\noindent \bfseries 
+	Консультант практики от \SPbPUOfficialShort:
+%	Консультанты практики от \SPbPUOfficialShort:
+} 
+{\noindent \expandafter \ulined \ConsultantExtraFull, \ConsultantExtraDegree}.%,      %% первый консультант Ф.И.О., должность, степень
+%{\noindent \expandafter \ulined \ConsultantExtraTwoFull, \ConsultantExtraTwoDegree.}  %% второй консультант Ф.И.О., должность, степень 
+
+{\noindent {\bfseries Оценка:} \uline{\hspace*{0.1\textheight}} % НЕ ЗАПОЛНЯЕМ!
+
+\vspace{0pt plus1fill}%
+
+\noindent
+\begin{tabularx}{\linewidth}{lXl}
+	Руководитель практики		&	&\\
+	от \SPbPUOfficialShort		&	& \Supervisor     \\[\mfloatsep] % если не хватает места, закомментировать
+
+	Консультант практики		&	&\\
+	от \SPbPUOfficialShort		&	& \ConsultantExtra\\[\mfloatsep]
+%							&	& \ConsultantExtraTwo\\[\mfloatsep]
+	
+	Обучающийся				&	&\Author\\[\mfloatsep]
+	Дата: \uline{\PracticeEndDate}		&	&
+\end{tabularx} %
+
+
+%
+\vspace{0pt plus4fill}% 
+
+\restoregeometry
+\newpage
