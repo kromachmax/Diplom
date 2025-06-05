@@ -56,7 +56,7 @@ void generate_random_instance(
         for (int j = 0; j < m; ++j)
         {
             double distance = calculate_distance(robot_coords[i], task_coords[j]);
-            alpha_auction[i][j] = PARAMETRS::max_utility / (distance + PARAMETRS::DISTANCE_OFFSET);
+            alpha_auction[i][j] = calculate_distance({0.0, PARAMETRS::max_utility}, {PARAMETRS::max_utility, 0.0}) / (distance + PARAMETRS::DISTANCE_OFFSET);
         }
     }
 }
@@ -128,6 +128,127 @@ QChart* create_time_chart(const std::vector<int>& sizes,
     }
 
     axisY->setRange(min_time * 0.9, max_time * 1.1);
+    chart->addAxis(axisY, Qt::AlignLeft);
+
+    for (auto& series : chart->series()) {
+        series->attachAxis(axisX);
+        series->attachAxis(axisY);
+    }
+
+    return chart;
+}
+
+
+QChart* create_operation_chart(
+    const std::vector<int>& sizes,
+    const std::vector<double>& operation_count_auction_avg,
+    const std::vector<double>& logic_operation_count_auction_avg,
+    const std::vector<double>& change_operation_count_auction_avg,
+    const std::vector<double>& operation_count_hungarian_avg,
+    const std::vector<double>& logic_operation_count_hungarian_avg,
+    const std::vector<double>& change_operation_count_hungarian_avg,
+    const int& r)
+{
+    QChart* chart = new QChart();
+    chart->setTitle(QString("Сравнение количества операций (R=%1)").arg(r));
+    chart->setAnimationOptions(QChart::AllAnimations);
+    chart->legend()->setVisible(true);
+    chart->legend()->setAlignment(Qt::AlignBottom);
+
+    // Серия для аукционного алгоритма: общее количество операций
+    QLineSeries* auction_total_series = new QLineSeries();
+    auction_total_series->setName(QString("Аукционный(R=%1): Арифметические").arg(r));
+    auction_total_series->setPen(QPen(Qt::blue, 2, Qt::SolidLine));
+    for (size_t i = 0; i < sizes.size(); ++i)
+    {
+        auction_total_series->append(sizes[i], operation_count_auction_avg[i]);
+    }
+    chart->addSeries(auction_total_series);
+
+    // Серия для аукционного алгоритма: логические операции
+    QLineSeries* auction_logic_series = new QLineSeries();
+    auction_logic_series->setName(QString("Аукционный (R=%1): Логические").arg(r));
+    auction_logic_series->setPen(QPen(Qt::green, 2, Qt::SolidLine));
+    for (size_t i = 0; i < sizes.size(); ++i)
+    {
+        auction_logic_series->append(sizes[i], logic_operation_count_auction_avg[i]);
+    }
+    chart->addSeries(auction_logic_series);
+
+    // Серия для аукционного алгоритма: обмены
+    QLineSeries* auction_change_series = new QLineSeries();
+    auction_change_series->setName(QString("Аукционный (R=%1): Обмены").arg(r));
+    auction_change_series->setPen(QPen(Qt::magenta, 2, Qt::SolidLine));
+    for (size_t i = 0; i < sizes.size(); ++i)
+    {
+        auction_change_series->append(sizes[i], change_operation_count_auction_avg[i]);
+    }
+    chart->addSeries(auction_change_series);
+
+    // Серия для венгерского алгоритма: общее количество операций
+    QLineSeries* hungarian_total_series = new QLineSeries();
+    hungarian_total_series->setName(QString("Венгерский: Арифметические"));
+    hungarian_total_series->setPen(QPen(Qt::red, 2, Qt::DashLine));
+    for (size_t i = 0; i < sizes.size(); ++i)
+    {
+        hungarian_total_series->append(sizes[i], operation_count_hungarian_avg[i]);
+    }
+    chart->addSeries(hungarian_total_series);
+
+    // Серия для венгерского алгоритма: логические операции
+    QLineSeries* hungarian_logic_series = new QLineSeries();
+    hungarian_logic_series->setName(QString("Венгерский: Логические"));
+    hungarian_logic_series->setPen(QPen(Qt::darkYellow, 2, Qt::DashLine));
+    for (size_t i = 0; i < sizes.size(); ++i)
+    {
+        hungarian_logic_series->append(sizes[i], logic_operation_count_hungarian_avg[i]);
+    }
+    chart->addSeries(hungarian_logic_series);
+
+    // Серия для венгерского алгоритма: обмены
+    QLineSeries* hungarian_change_series = new QLineSeries();
+    hungarian_change_series->setName(QString("Венгерский: Обмены"));
+    hungarian_change_series->setPen(QPen(Qt::darkCyan, 2, Qt::DashLine));
+    for (size_t i = 0; i < sizes.size(); ++i)
+    {
+        hungarian_change_series->append(sizes[i], change_operation_count_hungarian_avg[i]);
+    }
+    chart->addSeries(hungarian_change_series);
+
+    // Ось X (размер задачи)
+    QValueAxis* axisX = new QValueAxis();
+    axisX->setTitleText("Размер задачи (n)");
+    axisX->setLabelFormat("%d");
+    axisX->setTickCount(20);
+    chart->addAxis(axisX, Qt::AlignBottom);
+
+    // Ось Y (логарифмическая, число операций)
+    QLogValueAxis* axisY = new QLogValueAxis();
+    axisY->setTitleText("Число операций");
+    axisY->setLabelFormat("%.2f");
+    axisY->setBase(10.0);
+
+    // Определение диапазона для оси Y
+    double min_ops = std::numeric_limits<double>::max();
+    double max_ops = std::numeric_limits<double>::min();
+
+    // Поиск минимума и максимума для всех серий
+    for (const auto* data : {
+             &operation_count_auction_avg,
+             &logic_operation_count_auction_avg,
+             &change_operation_count_auction_avg,
+             &operation_count_hungarian_avg,
+             &logic_operation_count_hungarian_avg,
+             &change_operation_count_hungarian_avg
+         })
+    {
+        auto current_min = *std::min_element(data->begin(), data->end());
+        auto current_max = *std::max_element(data->begin(), data->end());
+        min_ops = std::min(min_ops, current_min);
+        max_ops = std::max(max_ops, current_max);
+    }
+
+    axisY->setRange(min_ops * 0.9, max_ops * 1.1);
     chart->addAxis(axisY, Qt::AlignLeft);
 
     for (auto& series : chart->series()) {
@@ -494,6 +615,14 @@ int main(int argc, char *argv[])
     std::vector<int> fixed_sizes2 = {10, 30, 50, 100};
     std::vector<std::vector<double>> all_value_per_iteration(fixed_sizes2.size());
 
+    std::vector<double> operation_count_auction_avg;
+    std::vector<double> logic_operation_count_auction_avg;
+    std::vector<double> change_operation_count_auction_avg;
+
+    std::vector<double> operation_count_hungarian_avg;
+    std::vector<double> logic_operation_count_hungarian_avg;
+    std::vector<double> change_operation_count_hungarian_avg;
+
     PARAMETRS::min_utility = 1.0;
     PARAMETRS::max_utility = 100.0;
 
@@ -503,201 +632,258 @@ int main(int argc, char *argv[])
     const double min_epsilon = 1e-5;
     const double max_epsilon = 10.0;
 
+
     {
         for(int i = min_size; i <= max_size; i += step) {
             sizes.push_back(i);
         }
 
-        for(int i = 0; i < fixed_visibility_radii.size(); ++i)
-        {
-            auto& auction_times_avg = all_auction_times_avg[i];
-            auto& hungarian_times_avg = all_hungarian_times_avg[i];
-            double fixed_visibility_radius = fixed_visibility_radii[i];
+        // {
+        //     for(int i = 0; i < fixed_visibility_radii.size(); ++i)
+        //     {
+        //         auto& auction_times_avg = all_auction_times_avg[i];
+        //         auto& hungarian_times_avg = all_hungarian_times_avg[i];
+        //         double fixed_visibility_radius = fixed_visibility_radii[i];
 
+        //         for(auto& n : sizes)
+        //         {
+        //             int m = n;
+
+        //             double auction_total = 0.0;
+        //             double hungarian_total = 0.0;
+
+        //             for (int repeat = 0; repeat < num_repeats; ++repeat)
+        //             {
+        //                 std::vector<std::vector<double>> alpha;
+        //                 std::vector<std::vector<int>> visibility_robots;
+        //                 generate_random_instance(n, m, alpha, visibility_robots, fixed_visibility_radius, gen);
+
+        //                 AuctionAlgo<double> algo;
+        //                 std::vector<int> auction_assignment;
+
+        //                 auto start = std::chrono::high_resolution_clock::now();
+        //                 algo.Start(n, m, alpha, visibility_robots, 1.0 / n, auction_assignment);
+        //                 auto end = std::chrono::high_resolution_clock::now();
+        //                 auction_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+
+        //                 std::vector<int> hungarian_assignment;
+        //                 std::vector<int> N_max(m, 1);
+        //                 HungarianAlgo<double> hungarian_algo(n, m, alpha, N_max);
+
+        //                 start = std::chrono::high_resolution_clock::now();
+        //                 hungarian_algo.Start(hungarian_assignment);
+        //                 end = std::chrono::high_resolution_clock::now();
+        //                 hungarian_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+        //             }
+
+        //             auction_times_avg.push_back(auction_total / num_repeats);
+        //             hungarian_times_avg.push_back(hungarian_total / num_repeats);
+
+        //             std::cout << "Радиус: " << fixed_visibility_radius << " | Размер: " << n << "x" << m
+        //                       << " | Аукционный: " << auction_times_avg.back() << " мс"
+        //                       << " | Венгерский: " << hungarian_times_avg.back() << " мс" << std::endl;
+        //         }
+        //     }
+        // }
+
+        {
             for(auto& n : sizes)
             {
                 int m = n;
 
-                double auction_total = 0.0;
-                double hungarian_total = 0.0;
+                int operation_count_auction = 0;
+                int logic_operation_count_auction = 0;
+                int change_operation_count_auction = 0;
+
+                int operation_count_hungarian = 0;
+                int logic_operation_count_hungarian = 0;
+                int change_operation_count_hungarian = 0;
+
+                int operation_count = 0;
+                int logic_operation_count = 0;
+                int change_operation_count = 0;
 
                 for (int repeat = 0; repeat < num_repeats; ++repeat)
                 {
                     std::vector<std::vector<double>> alpha;
                     std::vector<std::vector<int>> visibility_robots;
-                    generate_random_instance(n, m, alpha, visibility_robots, fixed_visibility_radius, gen);
+                    generate_random_instance(n, m, alpha, visibility_robots, 200, gen);
 
                     AuctionAlgo<double> algo;
                     std::vector<int> auction_assignment;
-
-                    auto start = std::chrono::high_resolution_clock::now();
-                    algo.Start(n, m, alpha, visibility_robots, 1.0 / n, auction_assignment);
-                    auto end = std::chrono::high_resolution_clock::now();
-                    auction_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+                    algo.Start(n, m, alpha, visibility_robots, 0.01, auction_assignment, std::nullopt, operation_count, logic_operation_count, change_operation_count);
+                    operation_count_auction += operation_count;
+                    logic_operation_count_auction += logic_operation_count;
+                    change_operation_count_auction += change_operation_count;
 
                     std::vector<int> hungarian_assignment;
                     std::vector<int> N_max(m, 1);
                     HungarianAlgo<double> hungarian_algo(n, m, alpha, N_max);
-
-                    start = std::chrono::high_resolution_clock::now();
-                    hungarian_algo.Start(hungarian_assignment);
-                    end = std::chrono::high_resolution_clock::now();
-                    hungarian_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+                    hungarian_algo.Start(hungarian_assignment, operation_count, logic_operation_count, change_operation_count);
+                    operation_count_hungarian += operation_count;
+                    logic_operation_count_hungarian += logic_operation_count;
+                    change_operation_count_hungarian += change_operation_count;
                 }
 
-                auction_times_avg.push_back(auction_total / num_repeats);
-                hungarian_times_avg.push_back(hungarian_total / num_repeats);
+                operation_count_auction_avg.push_back(operation_count_auction / num_repeats);
+                logic_operation_count_auction_avg.push_back(logic_operation_count_auction / num_repeats);
+                change_operation_count_auction_avg.push_back(change_operation_count_auction / num_repeats);
 
-                std::cout << "Радиус: " << fixed_visibility_radius << " | Размер: " << n << "x" << m
-                          << " | Аукционный: " << auction_times_avg.back() << " мс"
-                          << " | Венгерский: " << hungarian_times_avg.back() << " мс" << std::endl;
+                operation_count_hungarian_avg.push_back(operation_count_hungarian / num_repeats);
+                logic_operation_count_hungarian_avg.push_back(logic_operation_count_hungarian / num_repeats);
+                change_operation_count_hungarian_avg.push_back(change_operation_count_hungarian / num_repeats);
+
+                std::cout << "Размер: " << n << "x" << m
+                          << "\nАукционный: " << operation_count_auction_avg.back() << " op. | " << logic_operation_count_auction_avg.back() << " l_op. | " << change_operation_count_auction_avg.back() << " ch_op."
+                          << "\nВенгерский: " << operation_count_hungarian_avg.back() << " op. | " << logic_operation_count_hungarian_avg.back() << " l_op. | " << change_operation_count_hungarian_avg.back() << " ch_op.\n\n";
             }
+
         }
     }
 
-    {
-        for (int i = min_radius; i <= max_radius; ++i) {
-            radii.push_back(i);
-        }
+    // {
+    //     for (int i = min_radius; i <= max_radius; ++i) {
+    //         radii.push_back(i);
+    //     }
 
-        for(int i = 0; i < fixed_sizes.size(); ++i)
-        {
-            std::vector<double>& accuracy_avg = all_accuracy_avg[i];
-            int fixed_size = fixed_sizes[i];
+    //     for(int i = 0; i < fixed_sizes.size(); ++i)
+    //     {
+    //         std::vector<double>& accuracy_avg = all_accuracy_avg[i];
+    //         int fixed_size = fixed_sizes[i];
 
-            for (auto& r : radii)
-            {
-                double accuracy_total = 0.0;
+    //         for (auto& r : radii)
+    //         {
+    //             double accuracy_total = 0.0;
 
-                for (int repeat = 0; repeat < num_repeats; ++repeat)
-                {
-                    std::vector<std::vector<double>> alpha;
-                    std::vector<std::vector<int>> visibility_robots;
-                    generate_random_instance(fixed_size, fixed_size, alpha, visibility_robots, r, gen);
+    //             for (int repeat = 0; repeat < num_repeats; ++repeat)
+    //             {
+    //                 std::vector<std::vector<double>> alpha;
+    //                 std::vector<std::vector<int>> visibility_robots;
+    //                 generate_random_instance(fixed_size, fixed_size, alpha, visibility_robots, r, gen);
 
-                    AuctionAlgo<double> algo;
-                    std::vector<int> auction_assignment;
-                    double auction_benefit = algo.Start(fixed_size, fixed_size, alpha, visibility_robots, 1e-2, auction_assignment);
+    //                 AuctionAlgo<double> algo;
+    //                 std::vector<int> auction_assignment;
+    //                 double auction_benefit = algo.Start(fixed_size, fixed_size, alpha, visibility_robots, 1e-2, auction_assignment);
 
-                    std::vector<int> hungarian_assignment;
-                    std::vector<int> N_max(fixed_size, 1);
-                    HungarianAlgo<double> hungarian_algo(fixed_size, fixed_size, alpha, N_max);
-                    double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
+    //                 std::vector<int> hungarian_assignment;
+    //                 std::vector<int> N_max(fixed_size, 1);
+    //                 HungarianAlgo<double> hungarian_algo(fixed_size, fixed_size, alpha, N_max);
+    //                 double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
 
-                    if (hungarian_benefit > 0) {
-                        accuracy_total += auction_benefit / hungarian_benefit * 100;
-                    } else {
-                        accuracy_total += 0.0;
-                    }
-                }
+    //                 if (hungarian_benefit > 0) {
+    //                     accuracy_total += auction_benefit / hungarian_benefit * 100;
+    //                 } else {
+    //                     accuracy_total += 0.0;
+    //                 }
+    //             }
 
-                accuracy_avg.push_back(accuracy_total / num_repeats);
-                std::cout << "Размер: " << fixed_size << " | Радиус: " << r
-                          << " | Точность: " << accuracy_avg.back() << " %" << std::endl;
-            }
-        }
-    }
+    //             accuracy_avg.push_back(accuracy_total / num_repeats);
+    //             std::cout << "Размер: " << fixed_size << " | Радиус: " << r
+    //                       << " | Точность: " << accuracy_avg.back() << " %" << std::endl;
+    //         }
+    //     }
+    // }
 
-    {
-        double e = min_epsilon;
-        while(e <= max_epsilon)
-        {
-            epsilons.push_back(e);
-            e *= 10.0;
-        }
+    // {
+    //     double e = min_epsilon;
+    //     while(e <= max_epsilon)
+    //     {
+    //         epsilons.push_back(e);
+    //         e *= 10.0;
+    //     }
 
-        for(int i = 0; i < fixed_visibility_radii.size(); ++i)
-        {
-            double fixed_visibility_radius = fixed_visibility_radii[i];
-            auto& epsilon_times_avg = all_epsilon_times_avg[i];
-            auto& epsilon_accuracy_avg = all_epsilon_accuracy_avg[i];
+    //     for(int i = 0; i < fixed_visibility_radii.size(); ++i)
+    //     {
+    //         double fixed_visibility_radius = fixed_visibility_radii[i];
+    //         auto& epsilon_times_avg = all_epsilon_times_avg[i];
+    //         auto& epsilon_accuracy_avg = all_epsilon_accuracy_avg[i];
 
-            for (auto& e : epsilons)
-            {
-                double auction_time_total = 0.0;
-                double accuracy_total = 0.0;
+    //         for (auto& e : epsilons)
+    //         {
+    //             double auction_time_total = 0.0;
+    //             double accuracy_total = 0.0;
 
-                for (int repeat = 0; repeat < num_repeats; ++repeat)
-                {
-                    std::vector<std::vector<double>> alpha;
-                    std::vector<std::vector<int>> visibility_robots;
-                    generate_random_instance(fixed_size_eps, fixed_size_eps, alpha, visibility_robots, fixed_visibility_radius, gen);
+    //             for (int repeat = 0; repeat < num_repeats; ++repeat)
+    //             {
+    //                 std::vector<std::vector<double>> alpha;
+    //                 std::vector<std::vector<int>> visibility_robots;
+    //                 generate_random_instance(fixed_size_eps, fixed_size_eps, alpha, visibility_robots, fixed_visibility_radius, gen);
 
-                    AuctionAlgo<double> algo;
-                    std::vector<int> auction_assignment;
+    //                 AuctionAlgo<double> algo;
+    //                 std::vector<int> auction_assignment;
 
-                    auto start = std::chrono::high_resolution_clock::now();
-                    double auction_benefit = algo.Start(fixed_size_eps, fixed_size_eps, alpha, visibility_robots, e, auction_assignment);
-                    auto end = std::chrono::high_resolution_clock::now();
-                    auction_time_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+    //                 auto start = std::chrono::high_resolution_clock::now();
+    //                 double auction_benefit = algo.Start(fixed_size_eps, fixed_size_eps, alpha, visibility_robots, e, auction_assignment);
+    //                 auto end = std::chrono::high_resolution_clock::now();
+    //                 auction_time_total += std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
 
-                    std::vector<int> hungarian_assignment;
-                    std::vector<int> N_max(fixed_size_eps, 1);
-                    HungarianAlgo<double> hungarian_algo(fixed_size_eps, fixed_size_eps, alpha, N_max);
-                    double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
+    //                 std::vector<int> hungarian_assignment;
+    //                 std::vector<int> N_max(fixed_size_eps, 1);
+    //                 HungarianAlgo<double> hungarian_algo(fixed_size_eps, fixed_size_eps, alpha, N_max);
+    //                 double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
 
-                    if (hungarian_benefit > 0) {
-                        accuracy_total += (auction_benefit / hungarian_benefit) * 100;
-                    } else {
-                        accuracy_total += 0.0;
-                    }
-                }
+    //                 if (hungarian_benefit > 0) {
+    //                     accuracy_total += (auction_benefit / hungarian_benefit) * 100;
+    //                 } else {
+    //                     accuracy_total += 0.0;
+    //                 }
+    //             }
 
-                epsilon_times_avg.push_back(auction_time_total / num_repeats);
-                epsilon_accuracy_avg.push_back(accuracy_total / num_repeats);
+    //             epsilon_times_avg.push_back(auction_time_total / num_repeats);
+    //             epsilon_accuracy_avg.push_back(accuracy_total / num_repeats);
 
-                std::cout << "Радиус: "  << fixed_visibility_radius << " | ε: " << e
-                          << " | Время аукционного: " << epsilon_times_avg.back() << " мс"
-                          << " | Точность: " << epsilon_accuracy_avg.back() << " %" << std::endl;
-            }
-        }
-    }
+    //             std::cout << "Радиус: "  << fixed_visibility_radius << " | ε: " << e
+    //                       << " | Время аукционного: " << epsilon_times_avg.back() << " мс"
+    //                       << " | Точность: " << epsilon_accuracy_avg.back() << " %" << std::endl;
+    //         }
+    //     }
+    // }
 
-    {
-        for(int i = 0; i < fixed_sizes2.size(); ++i)
-        {
-            std::vector<int> count_per_iteration;
+    // {
+    //     for(int i = 0; i < fixed_sizes2.size(); ++i)
+    //     {
+    //         std::vector<int> count_per_iteration;
 
-            for(int k = 0; k < 1; ++k)
-            {
-                double fixed_radius = 200;
-                double size = fixed_sizes2[i];
-                std::vector<double> value_per_iteration;
+    //         for(int k = 0; k < 1; ++k)
+    //         {
+    //             double fixed_radius = 200;
+    //             double size = fixed_sizes2[i];
+    //             std::vector<double> value_per_iteration;
 
-                std::vector<std::vector<double>> alpha;
-                std::vector<std::vector<int>> visibility_robots;
-                generate_random_instance(size, size, alpha, visibility_robots, fixed_radius, gen);
+    //             std::vector<std::vector<double>> alpha;
+    //             std::vector<std::vector<int>> visibility_robots;
+    //             generate_random_instance(size, size, alpha, visibility_robots, fixed_radius, gen);
 
-                AuctionAlgo<double> algo;
-                std::vector<int> auction_assignment;
-                algo.Start(size, size, alpha, visibility_robots, 1e-2, auction_assignment, value_per_iteration);
+    //             AuctionAlgo<double> algo;
+    //             std::vector<int> auction_assignment;
+    //             algo.Start(size, size, alpha, visibility_robots, 1e-2, auction_assignment, value_per_iteration);
 
-                std::vector<int> hungarian_assignment;
-                std::vector<int> N_max(size, 1);
-                HungarianAlgo<double> hungarian_algo(size, size, alpha, N_max);
-                double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
+    //             std::vector<int> hungarian_assignment;
+    //             std::vector<int> N_max(size, 1);
+    //             HungarianAlgo<double> hungarian_algo(size, size, alpha, N_max);
+    //             double hungarian_benefit = hungarian_algo.Start(hungarian_assignment);
 
-                for(auto& val : value_per_iteration)
-                {
-                    val = (val / hungarian_benefit) * 100;
-                }
+    //             for(auto& val : value_per_iteration)
+    //             {
+    //                 val = (val / hungarian_benefit) * 100;
+    //             }
 
-                all_value_per_iteration[i].resize(std::max(value_per_iteration.size(), all_value_per_iteration.size()));
-                count_per_iteration.resize(std::max(value_per_iteration.size(), all_value_per_iteration.size()));
+    //             all_value_per_iteration[i].resize(std::max(value_per_iteration.size(), all_value_per_iteration.size()));
+    //             count_per_iteration.resize(std::max(value_per_iteration.size(), all_value_per_iteration.size()));
 
-                for(int j = 0; j < std::min(all_value_per_iteration[i].size(), value_per_iteration.size()); ++j)
-                {
-                    all_value_per_iteration[i][j] += value_per_iteration[j];
-                    count_per_iteration[j]++;
-                }
-            }
+    //             for(int j = 0; j < std::min(all_value_per_iteration[i].size(), value_per_iteration.size()); ++j)
+    //             {
+    //                 all_value_per_iteration[i][j] += value_per_iteration[j];
+    //                 count_per_iteration[j]++;
+    //             }
+    //         }
 
-            for(int j = 0; j < all_value_per_iteration[i].size(); ++j)
-            {
-                all_value_per_iteration[i][j] /= count_per_iteration[j];
-            }
-        }
-    }
+    //         for(int j = 0; j < all_value_per_iteration[i].size(); ++j)
+    //         {
+    //             all_value_per_iteration[i][j] /= count_per_iteration[j];
+    //         }
+    //     }
+    // }
 
 
     int completedCharts = 0;
@@ -725,20 +911,24 @@ int main(int argc, char *argv[])
         });
     };
 
-    QChartView *chartView = new QChartView(create_time_chart(sizes, all_auction_times_avg, all_hungarian_times_avg, fixed_visibility_radii));
-    saveChart(chartView, "time_chart.png");
+    // QChartView *chartView = new QChartView(create_time_chart(sizes, all_auction_times_avg, all_hungarian_times_avg, fixed_visibility_radii));
+    // saveChart(chartView, "time_chart.png");
 
-    QChartView *accuracyChartView = new QChartView(create_accuracy_chart(radii, all_accuracy_avg, fixed_sizes));
-    saveChart(accuracyChartView, "accuracy_chart.png");
+    QChartView *chartOpeartionView = new QChartView(create_operation_chart(sizes, operation_count_auction_avg, logic_operation_count_auction_avg, change_operation_count_auction_avg,
+                                                                           operation_count_hungarian_avg, logic_operation_count_hungarian_avg, change_operation_count_hungarian_avg, 200));
+    saveChart(chartOpeartionView, "operation_chart.png");
 
-    QChartView *epsilonTimeChartView = new QChartView(create_epsilon_time_chart(epsilons, all_epsilon_times_avg, fixed_visibility_radii));
-    saveChart(epsilonTimeChartView, "epsilon_time_chart.png");
+    // QChartView *accuracyChartView = new QChartView(create_accuracy_chart(radii, all_accuracy_avg, fixed_sizes));
+    // saveChart(accuracyChartView, "accuracy_chart.png");
 
-    QChartView *epsilonAccuracyChartView = new QChartView(create_epsilon_accuracy_chart(epsilons, all_epsilon_accuracy_avg, fixed_visibility_radii));
-    saveChart(epsilonAccuracyChartView, "epsilon_accuracy_chart.png");
+    // QChartView *epsilonTimeChartView = new QChartView(create_epsilon_time_chart(epsilons, all_epsilon_times_avg, fixed_visibility_radii));
+    // saveChart(epsilonTimeChartView, "epsilon_time_chart.png");
 
-    QChartView *AccuracyPerIterationChartView = new QChartView(create_acc_per_iteration_chart(all_value_per_iteration, fixed_sizes2));
-    saveChart(AccuracyPerIterationChartView, "accuracy_per_iteration_chart.png");
+    // QChartView *epsilonAccuracyChartView = new QChartView(create_epsilon_accuracy_chart(epsilons, all_epsilon_accuracy_avg, fixed_visibility_radii));
+    // saveChart(epsilonAccuracyChartView, "epsilon_accuracy_chart.png");
+
+    // QChartView *AccuracyPerIterationChartView = new QChartView(create_acc_per_iteration_chart(all_value_per_iteration, fixed_sizes2));
+    // saveChart(AccuracyPerIterationChartView, "accuracy_per_iteration_chart.png");
 
     return a.exec();
 }

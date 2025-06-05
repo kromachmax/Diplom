@@ -18,17 +18,18 @@ public:
 
     // Основной метод без подсчета операций
     T Start(std::vector<int>& assignment) {
-        int dummy_counter = 0;
-        return StartImpl(assignment, dummy_counter);
+        int operation_count = 0, logic_operation_count = 0, change_opeartion_count = 0;
+        return StartImpl(assignment, operation_count, logic_operation_count, change_opeartion_count);
     }
 
     // Метод с подсчетом операций
-    T Start(std::vector<int>& assignment, int& operation_count) {
-        return StartImpl(assignment, operation_count);
+    T Start(std::vector<int>& assignment, int& operation_count, int& logic_operation_count, int& change_opeartion_count)
+    {
+        return StartImpl(assignment, operation_count, logic_operation_count, change_opeartion_count);
     }
 
 private:
-    T StartImpl(std::vector<int>&, int& operation_count);
+    T StartImpl(std::vector<int>&, int& operation_count, int& logic_operation_count, int& change_opeartion_count);
 
     [[nodiscard]] bool isUsedRows() const noexcept;
     [[nodiscard]] bool isUsedCols() const noexcept;
@@ -66,11 +67,15 @@ HungarianAlgo<T>::HungarianAlgo(std::size_t n, std::size_t m, std::vector<std::v
 }
 
 template<typename T>
-T HungarianAlgo<T>::StartImpl(std::vector<int>& assignment, int& operation_count)
+T HungarianAlgo<T>::StartImpl(std::vector<int>& assignment, int& operation_count, int& logic_operation_count, int& change_opeartion_count)
 {
     if (num_rows == 0 || num_cols == 0) {
         return T(0);
     }
+
+    operation_count = 0;
+    logic_operation_count = 0;
+    change_opeartion_count = 0;
 
     // Find maximum value in matrix
     T max_val = D[0][0];
@@ -94,6 +99,8 @@ T HungarianAlgo<T>::StartImpl(std::vector<int>& assignment, int& operation_count
         }
     }
 
+    change_opeartion_count += num_cols * num_rows;
+
     // Hungarian algorithm implementation
     const T INF = std::numeric_limits<T>::max();
     std::vector<T> u(num_rows + 1, 0);
@@ -105,10 +112,11 @@ T HungarianAlgo<T>::StartImpl(std::vector<int>& assignment, int& operation_count
     {
         p[0] = i;
         std::size_t j0 = 0;
+        operation_count += 2;
+
         std::vector<T> minv(num_cols + 1, INF);
         std::vector<bool> used(num_cols + 1, false);
-
-        operation_count += 2;
+        operation_count += 2 * num_cols;
 
         do {
             used[j0] = true;
@@ -116,17 +124,19 @@ T HungarianAlgo<T>::StartImpl(std::vector<int>& assignment, int& operation_count
             T delta = INF;
             std::size_t j1 = 0;
 
-            operation_count += 2;
+            operation_count += 4;
 
             for (std::size_t j = 1; j <= num_cols; ++j)
             {
+                logic_operation_count += 1;
+
                 if (!used[j])
                 {
                     T cur = cost[i0-1][j-1] - u[i0] - v[j];
                     operation_count += 3;
 
 
-                    operation_count += 1;
+                    logic_operation_count += 1;
                     if (cur < minv[j])
                     {
                         minv[j] = cur;
@@ -134,7 +144,7 @@ T HungarianAlgo<T>::StartImpl(std::vector<int>& assignment, int& operation_count
                         operation_count += 2;
                     }
 
-                    operation_count += 1;
+                    logic_operation_count += 1;
                     if (minv[j] < delta)
                     {
                         delta = minv[j];
@@ -146,7 +156,7 @@ T HungarianAlgo<T>::StartImpl(std::vector<int>& assignment, int& operation_count
 
             for (std::size_t j = 0; j <= num_cols; ++j)
             {
-                operation_count += 1;
+                logic_operation_count += 1;
 
                 if (used[j])
                 {
@@ -159,7 +169,8 @@ T HungarianAlgo<T>::StartImpl(std::vector<int>& assignment, int& operation_count
                 }
             }
             j0 = j1;
-            operation_count += 2;
+            operation_count += 1;
+            logic_operation_count += 1;
 
         } while (p[j0] != 0);
 
@@ -168,6 +179,7 @@ T HungarianAlgo<T>::StartImpl(std::vector<int>& assignment, int& operation_count
             p[j0] = p[j1];
             j0 = j1;
             operation_count += 3;
+            logic_operation_count += 1;
         } while (j0 != 0);
     }
 
