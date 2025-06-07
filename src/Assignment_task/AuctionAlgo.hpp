@@ -137,6 +137,18 @@ private:
             all_happy = true;
             operation_count += 1;
 
+            if(value_per_iteration.has_value())
+            {
+                T current_utility = 0;
+                for (int i = 0; i < n; ++i)
+                {
+                    if (assignment[i] != -1) {
+                        current_utility += alpha[i][assignment[i]];
+                    }
+                }
+                value_per_iteration->get().push_back(current_utility);
+            }
+
             for (int i = 0; i < n; ++i)
             {
                 // Вычисляем прибыль для текущей задачи (если робот назначен)
@@ -237,18 +249,6 @@ private:
 
                     change_operation_count += n;
                 }
-            }
-
-            if(value_per_iteration.has_value())
-            {
-                T current_utility = 0;
-                for (int i = 0; i < n; ++i)
-                {
-                    if (assignment[i] != -1) {
-                        current_utility += alpha[i][assignment[i]];
-                    }
-                }
-                value_per_iteration->get().push_back(current_utility);
             }
         }
 
