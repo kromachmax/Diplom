@@ -17,6 +17,7 @@ static double max_utility;
 static double visibility_radius;
 const  double DISTANCE_OFFSET = 1e-2;
 const  double epsilon = 1e-2;
+const double speed = 15.0;
 }
 
 // Структура для хранения координат
@@ -95,7 +96,8 @@ private:
                           std::optional<std::reference_wrapper<std::vector<double>>> value_per_iteration = std::nullopt,
                           std::optional<std::reference_wrapper<int>> op_count = std::nullopt,
                           std::optional<std::reference_wrapper<int>> logic_op_count = std::nullopt,
-                          std::optional<std::reference_wrapper<int>> change_op_count = std::nullopt)
+                          std::optional<std::reference_wrapper<int>> change_op_count = std::nullopt,
+                          std::optional<std::reference_wrapper<int>> number_of_iteration = std::nullopt)
     {
 
         // Инициализация цен задач
@@ -147,6 +149,11 @@ private:
                     }
                 }
                 value_per_iteration->get().push_back(current_utility);
+            }
+
+            if(number_of_iteration.has_value())
+            {
+                number_of_iteration->get()++;
             }
 
             for (int i = 0; i < n; ++i)
@@ -279,7 +286,8 @@ public:
             std::optional<std::reference_wrapper<std::vector<double>>> value_per_iteration = std::nullopt,
             std::optional<std::reference_wrapper<int>> operation_count = std::nullopt,
             std::optional<std::reference_wrapper<int>> logic_op_count = std::nullopt,
-            std::optional<std::reference_wrapper<int>> change_count = std::nullopt)
+            std::optional<std::reference_wrapper<int>> change_count = std::nullopt,
+            std::optional<std::reference_wrapper<int>> number_of_iterations = std::nullopt)
     {
         // Находим компоненты связности
         auto components = FindConnectedComponents(visibility_robots);
@@ -315,8 +323,11 @@ public:
                 {
                     RunningForComponent(n, m, component_alpha, epsilon, component_assignment, std::nullopt, operation_count, logic_op_count, change_count);
                 }
-                else
+                else if(number_of_iterations.has_value())
                 {
+                    RunningForComponent(n, m, component_alpha, epsilon, component_assignment, std::nullopt, std::nullopt, std::nullopt, std::nullopt, number_of_iterations);
+                }
+                else {
                     RunningForComponent(n, m, component_alpha, epsilon, component_assignment);
                 }
 
