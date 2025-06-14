@@ -1,0 +1,45 @@
+\chapter*{РЕФЕРАТ}
+\label{ch:abstract}
+
+На 34 с., 6 рисунков, 0 таблиц, 0 приложений \\
+
+КЛЮЧЕВЫЕ СЛОВА: ЗАДАЧА О НАЗНАЧЕНИЯХ, АУКЦИОННЫЙ АЛГОРИТМ, ВЕНГЕРСКИЙ АЛГОРИТМ, ОГРАНИЧЕННАЯ КОММУНИКАЦИЯ, РАСПРЕДЕЛЁННЫЕ СИСТЕМЫ, ДЕЦЕНТРАЛИЗОВАННОЕ УПРАВЛЕНИЕ, ОПТИМАЛЬНОСТЬ.
+
+\textbf{Тема выпускной квалификационной работы}: «Децентрализованное решение задачи о назначениях целей группе роботов».
+
+В данной работе объектом исследования являются распределённые системы управления роботами в условиях ограниченной коммуникации. Предмет исследования — алгоритмы назначения целей, учитывающие топологические ограничения сети связи. Основная цель работы — повышение эффективности распределения целей в системах роботов с ограниченными областями связи путём разработки и применения модифицированного аукционного алгоритма. 
+
+Решаемые задачи в ходе исследования:
+\begin{itemize}
+	\item Изучение существующих алгоритмов назначения, включая аукционный и венгерский методы.
+	\item Анализ влияния ограниченной коммуникации на эффективность алгоритмов.
+	\item Разработка модификации аукционного алгоритма, учитывающей топологические ограничения.
+	\item Реализация предложенного алгоритма и венгерского алгоритма в программной среде.
+	\item Проведение сравнительного тестирования алгоритмов на модельных задачах с различными характеристиками коммуникационных ограничений.
+\end{itemize}
+
+
+По результатам экспериментов сделаны выводы о высокой эффективности модифицированного аукционного алгоритма в условиях ограниченной коммуникации, особенно при высоких скоростях обмена данными. Установлено, что аукционный алгоритм, в отличие от венгерского, позволяет учитывать погрешности в измерениях матрицы выгод путём выбора параметра точности $\varepsilon$ соразмерно этим погрешностям, что обеспечивает высокую точность при меньших вычислительных затратах. Венгерский алгоритм, не учитывающий погрешности и лишённый параметра $\varepsilon$, стремится к точному решению, которое в условиях реальных погрешностей и ограниченного радиуса связи недостижимо, что делает аукционный алгоритм более эффективным. Выявлена зависимость числа итераций и точности от параметров радиуса связи, размера задачи и параметра $\varepsilon$. Алгоритм применим в военных робототехнических системах, поисково-спасательных операциях и промышленной автоматизации.
+
+\newpage
+
+\chapter*{ABSTRACT}
+
+34 pages, 6 figures, 0 tables, 0 appendices \\
+
+\textbf{KEYWORDS}: ASSIGNMENT PROBLEM, AUCTION ALGORITHM, HUNGARIAN ALGORITHM, RESTRICTED COMMUNICATION, DISTRIBUTED SYSTEMS, DECENTRALIZED CONTROL, OPTIMALITY.
+
+\textbf{Title of the Thesis}: ``Decentralized Solution to the Target Assignment Problem for a Group of Robots''.
+
+This work focuses on distributed robot control systems under conditions of restricted communication. The subject of the study is target assignment algorithms that account for topological constraints of the communication network. The primary goal is to enhance the efficiency of target allocation in robotic systems with restricted communication ranges by developing and applying a modified auction algorithm.
+
+The tasks addressed in the study include:
+\begin{itemize}
+	\item Analysis of existing assignment algorithms, including the auction and Hungarian methods.
+	\item Evaluation of the impact of restricted communication on algorithm performance.
+	\item Development of a modified auction algorithm that accounts for topological constraints.
+	\item Implementation of the proposed algorithm and the Hungarian algorithm in a software environment.
+	\item Comparative testing of the algorithms on model problems with varying communication constraints.
+\end{itemize}
+
+Experimental results confirm the high efficiency of the modified auction algorithm under restricted communication conditions, particularly with high data exchange rates. It was established that, unlike the Hungarian algorithm, the auction algorithm accounts for measurement errors in the utility matrix by selecting the accuracy parameter $\varepsilon$ proportional to these errors, achieving high accuracy with lower computational costs. The Hungarian algorithm, which does not account for errors and lacks the $\varepsilon$ parameter, aims for an exact solution that is unattainable under real-world measurement errors and restricted communication range, making the auction algorithm more effective. The dependence of iteration count and accuracy on communication range, problem size, and the $\varepsilon$ parameter was identified. The algorithm is applicable to military robotic systems, search and rescue operations, and industrial automation.

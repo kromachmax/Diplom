@@ -1,0 +1,158 @@
+\documentclass{beamer}
+
+% Setting up encoding and language support
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+% Including necessary packages for tables, algorithms, and math
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+% Configuring listings for code display
+\usepackage{listings}
+\lstset{
+	basicstyle=\ttfamily\footnotesize,
+	keywordstyle=\color{blue},
+	commentstyle=\color{green!50!black},
+	stringstyle=\color{red},
+	showstringspaces=false,
+	breaklines=true,
+	frame=single
+}
+
+% Setting Beamer theme and color scheme
+\usetheme{Madrid}
+\usecolortheme{dolphin}
+
+% Customizing Beamer colors
+\setbeamercolor*{palette primary}{use=structure,fg=white,bg=structure.fg!60!blue}
+\setbeamercolor*{palette secondary}{use=structure,fg=white,bg=structure.fg!45!blue}
+\setbeamercolor*{palette tertiary}{use=structure,fg=white,bg=structure.fg!30!blue}
+\setbeamercolor*{alerted text}{fg=blue!80!cyan}
+\setbeamercolor*{block title}{bg=blue!15!white,fg=blue!80!black}
+\setbeamercolor*{block body}{bg=blue!10!white}
+\setbeamercolor*{block title alerted}{bg=blue!20!white,fg=blue!80!black}
+\setbeamercolor*{block body alerted}{bg=blue!15!white}
+\setbeamercolor{background canvas}{bg=blue!10}
+
+% Defining the title page layout
+\title{Модифицированный аукционный алгоритм}
+\subtitle{Децентрализованное назначение целей группе роботов}
+\author{\hspace*{\fill}Кромачев Максим\\\hspace*{\fill}\footnotesize СПбПУ Петра Великого}
+\date{\hspace*{\fill}\today}
+
+% Кастомизация титульной страницы
+\setbeamertemplate{title page}{
+	\vbox{}
+	\vfill
+	\begingroup
+	\begin{beamercolorbox}[sep=0.1pt,wd=\textwidth,center]{title}
+		\usebeamerfont{title}\inserttitle\par
+	\end{beamercolorbox}
+	\vskip0.1em
+	\begin{beamercolorbox}[sep=8pt,wd=\textwidth,center]{subtitle}
+		\usebeamerfont{subtitle}\insertsubtitle\par
+	\end{beamercolorbox}
+	\vskip1.5em
+	\begin{beamercolorbox}[sep=8pt,wd=\textwidth,right]{author}
+		\usebeamerfont{author}\insertauthor
+	\end{beamercolorbox}
+	\vskip0.5em
+	\begin{beamercolorbox}[sep=8pt,wd=\textwidth,right]{date}
+		\usebeamerfont{date}\insertdate
+	\end{beamercolorbox}
+	\endgroup
+	\vfill
+}
+
+% Adding frame number to footline
+\setbeamertemplate{footline}[frame number]
+
+\begin{document}
+	
+	\begin{frame}
+		\titlepage
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Постановка задачи}
+		\framesubtitle{Назначение целей группе роботов}
+		
+		\begin{block}{Общая задача}
+			\begin{itemize}
+				\item Задача назначения — ключевая проблема комбинаторной оптимизации в робототехнике, логистике, управлении ресурсами.
+				\item Распределение $n$ роботов по $m$ целям для максимизации суммарной выгоды:
+				\[
+				\max \sum_{i=1}^n a_{ij_i}, \quad \text{где } a_{ij} \text{ — выгода назначения робота } i \text{ цели } j.
+				\]
+				\item Ограничения:
+				\[
+				\begin{aligned}
+					&\sum_{i=1}^n x_{ij} \leq 1, \quad \forall j = 1, \ldots, m, \\
+					&\sum_{j=1}^m x_{ij} \leq 1, \quad \forall i = 1, \ldots, n, \\
+					&x_{ij} \in \{0, 1\}, \quad \forall i, j,
+				\end{aligned}
+				\]
+				где $x_{ij} = 1$, если робот $i$ назначен цели $j$.
+			\end{itemize}
+		\end{block}
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Алгоритм аукциона без модификации}
+	\end{frame}
+
+	\begin{frame}
+	\frametitle{Описание аукционного алгоритма}
+	\framesubtitle{Шаги и ключевые понятия}
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Венгерский алгоритм}
+	\end{frame}
+
+	\begin{frame}
+		\frametitle{Описание венгерского алгоритма}
+		\framesubtitle{Шаги и ключевые понятия}
+	\end{frame}
+
+	\begin{frame}
+		\frametitle{Преимущества и недостатки методов}
+		\framesubtitle{Сравнение аукционного и венгерского методов}
+	\end{frame}
+	
+	
+	\begin{frame}
+		\frametitle{Модификация аукционного алгоритма}
+		\framesubtitle{Учёт ограничений связи}
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Анализ модифицированного аукционного алгоритма}
+		\framesubtitle{Сравнение с классическими методами}
+	\end{frame}
+	
+	
+	\begin{frame}
+		\frametitle{Влияние параметров}
+		\framesubtitle{Ключевые зависимости}
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Практическая значимость}
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Перспективы развития}
+	\end{frame}
+	
+	\begin{frame}
+		\frametitle{Выводы}
+	\end{frame}
+	
+\end{document}
