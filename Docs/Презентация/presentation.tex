@@ -85,31 +85,47 @@
 	\begin{frame}[plain]
 		\titlepage
 	\end{frame}
+
+	\begin{frame}
+		\frametitle{Содержание}
+		\begin{itemize}
+			\item Сущность задачи
+			\item Обзор возможных робототехнических систем
+			\item Положения, выносимые на защиту
+			\item Формальная постановка задачи
+			\item Венгерский метод
+			\item Алгоритм аукциона
+			\item Модификация алгоритма аукциона
+			\item Результаты экспериментов
+			\item Выводы и перспективы
+		\end{itemize}
+	\end{frame}
 	
 	\begin{frame}
-		\frametitle{Сущность задачи}
-		\begin{columns}[T] % Параметр T выравнивает колонки по верху
-			\begin{column}{0.5\textwidth} % Левая колонка (текст)
-				\begin{itemize}
-					\item Цели
-					\item Роботы
-					\begin{itemize}
-					\item Радиус связи
-					\item Область видимости
-					\end{itemize}
-					\item Центр управления
-					\item Погрешность определения координат целей
-				\end{itemize}
-			\end{column}
-			\begin{column}{0.5\textwidth} % Правая колонка (изображение)
-				\centering
-				\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{mrta1.png}
-			\end{column}
-		\end{columns}
+	    \frametitle{Сущность задачи}
+	    \begin{columns}[T]
+	        \begin{column}{0.5\textwidth}
+	            \begin{itemize}
+	                \item Цели \raisebox{-0.3em}{\includegraphics[width=0.5cm]{3.png}}  
+	                \item Роботы {\includegraphics[width=0.5cm]{2.jpg}}  
+	                \begin{itemize}
+	                    \item Радиус связи
+	                    \item Область видимости
+	                \end{itemize}
+	                \item Центр управления \raisebox{-0.1em}{\includegraphics[width=0.5cm]{1.jpg}}  
+	                \item Погрешность определения координат целей
+	            \end{itemize}
+	        \end{column}
+	        \begin{column}{0.6\textwidth}
+	            \centering
+		 \hspace*{-1.5cm} % Отрицательный отступ для смещения влевоы
+	            \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{mrta1.png}
+	        \end{column}
+	    \end{columns}
 	\end{frame}
 
 	\begin{frame}
-		\frametitle{Обзор возможных MRTA-систем}
+		\frametitle{Обзор возможных робототехнических систем}
 		\centering
 		\includegraphics[width=\textwidth,height=0.95\textheight,keepaspectratio]{classification.png}
 	\end{frame}
@@ -118,25 +134,27 @@
 	\begin{frame}
 		\frametitle{Положения, выносимые на защиту}
 		\begin{itemize}
-			\item Итерационный децентрализованный алгоритм назначения целей роботам
-			\item Учет ограничения связи (R) и позволяющий управлять точностью решения через параметр (\(\varepsilon\)).
-			\item В алгоритме приняты следующие ключевые допущения:
+			\item Принятые допущения:
 				\begin{itemize}
-					\item все роботы имеют одинаковый и неизменный радиус связи
-					\item все роботы обладают одинаковыми скоростями движения
+					\item Все роботы имеют одинаковый и неизменный радиус связи
+					\item Все роботы обладают одинаковыми скоростями движения
+					\item Каждый робот видит все цели
+					\item Точность определения координат целей одинакова для всех роботов
+					\item Не учитываются динамические системы роботов
 				\end{itemize}
-			\item Доказано, что алгоритм завершается за конечное число итераций, при этом учет погрешностей измерений обеспечивается адаптивным выбором параметра $\varepsilon$..
-			\item Проведено сравнительное исследование, позволившее определить требования к:
-			\begin{itemize}
-				\item вычислительным мощностям (скорость обработки данных)
-				\item каналам связи (скорость обмена информацией)
-			\end{itemize}
-			при которых модифицированный алгоритм превосходит по эффективности классический венгерский метод.
+			\item Постановка задачи
+			\item Итерационный децентрализованный алгоритм назначения целей роботам:
+				\begin{itemize}
+					\item Учет ограничений связи (R)
+					\item Управление точностью решения через параметр (\(\varepsilon\))
+				\end{itemize}
+			\item Результаты исследований
+			\item Выводы о применимости
 		\end{itemize}
 	\end{frame}
 
 	\begin{frame}{Формальная постановка задачи}
-		
+		\vspace*{-0.2cm}
 		\small
 		\textbf{Дано:}
 		\begin{itemize}
@@ -151,6 +169,8 @@
 		\]
 		где $j_i$ --- цель, назначенная роботу $r_i$.
 		
+
+		\vspace*{0.1cm}
 		\textbf{Ограничения:}
 		\begin{itemize}
 			\item Каждый робот получает не более одной цели: $\sum_{j=1}^m x_{ij} \leq 1, \ \forall i = 1, \ldots, n$.
@@ -165,50 +185,83 @@
 	\begin{frame}
 		\frametitle{Венгерский метод}
 		\begin{columns}[T] % Параметр T выравнивает колонки по верху
-			\begin{column}{0.4\textwidth} % Левая колонка (текст)
+			\begin{column}{0.5\textwidth} % Левая колонка (текст)
 				\begin{itemize}
-					\item Единый центр управления
-					\item Характеристики радиуса связи можно не учитывать
-					\item Полная область видимости
+					\item Единый центр управления (централизованный подход)
+                   				 \item Гарантирует точное оптимальное решение
+                   				 \item Вычислительная сложность: $O(n^2 * m)$
 				\end{itemize}
 			\end{column}
-			\begin{column}{0.6\textwidth} % Правая колонка (изображение)
+			\begin{column}{0.5\textwidth} % Правая колонка (изображение)
 				\centering
-				\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{topology_veng.png}
+				\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{mrta2.jpeg}
 			\end{column}
 		\end{columns}
 	\end{frame}
+                
 
 	\begin{frame}
-		\frametitle{Алгоритм аукциона}
-		\begin{columns}[T] % Параметр T выравнивает колонки по верху
-			\begin{column}{0.4\textwidth} % Левая колонка (текст)
-				\begin{itemize}
-					\item Нет единого центра управления
-					\item Требуется полная связь между роботами
-					\item Полная область видимости
-				\end{itemize}
-			\end{column}
-			\begin{column}{0.6\textwidth} % Правая колонка (изображение)
-				\centering
-				\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{topology_auction.png}
-			\end{column}
-		\end{columns}
+	    \frametitle{Алгоритм аукциона}
+	    \begin{columns}[T]
+	        \begin{column}{0.6\textwidth}
+	            \begin{itemize}
+	                \item Нет единого центра управления
+	                \item Имитирует процесс торгов
+	                \item Параметр \(\varepsilon\) контролирует точность
+	                \item Требует полной связи между роботами
+	                \item Число итераций $\sim m\cdot C/$\(\varepsilon\)
+	            \end{itemize}
+	        \end{column}
+	        \begin{column}{0.4\textwidth}
+	            \hspace*{-1cm} % Отрицательный отступ для смещения влево
+	            \includegraphics[width=1.2\textwidth,height=0.85\textheight,keepaspectratio]{mrta3.jpeg}
+	        \end{column}
+	    \end{columns}
 	\end{frame}
+
+	
+	\begin{frame}
+		\frametitle{Описание аукционного алгоритма}
+			
+			\begin{itemize}
+				\item \textbf{Инициализация}: 
+				\begin{itemize}
+					\item Установить цены целей: \( p_j = 0, \ \forall j \).
+					\item Назначения роботов пустые.
+				\end{itemize}
+				\item \textbf{Итерация для каждого робота} \( i \):
+				\begin{itemize}
+					\item Выбрать цель: \( j_i = \arg\max_j \{\alpha_{ij} - p_j\} \) (макс. выгода).
+					\item Вычислить: 
+					\begin{itemize}
+						\item \( v_i = \max_j \{\alpha_{ij} - p_j\} \) (макс. выгода).
+						\item \( w_i = \max_{j \neq j_i} \{\alpha_{ij} - p_j\} \) (вторая по величине выгода).
+					\end{itemize}
+					\item Переназначить робота \( i \) на цель \( j_i \).
+					\item Обновить цену: \( p_{j_i} \gets p_{j_i} + (v_i - w_i + \varepsilon) \).
+				\end{itemize}
+				\item \textbf{Условие завершения}: Все роботы «почти счастливы».
+				\item \textbf{«Почти счастье»}: 
+				\[ \alpha_{i j_i} - p_{j_i} \geq \max_j \{\alpha_{ij} - p_j\} - \varepsilon.\]
+			\end{itemize}
+	\end{frame}
+
 
 	\begin{frame}
 		\frametitle{Модификация алгоритма аукциона}
 		\begin{columns}[T] % Параметр T выравнивает колонки по верху
-			\begin{column}{0.4\textwidth} % Левая колонка (текст)
+			\begin{column}{0.6\textwidth} % Левая колонка (текст)
 				\begin{itemize}
 					\item Нет единого центра управления
-					\item Требуется полная связь между роботами
-					\item Полная область видимости
+					\item Ограниченная связь между роботами (внутри связных компонент)
+					\item Полная видимость целей для всех роботов
+					\item Разделение роботов на связные компоненты по графу связи
+					\item Независимый аукцион в каждой компоненте
 				\end{itemize}
 			\end{column}
-			\begin{column}{0.6\textwidth} % Правая колонка (изображение)
+			\begin{column}{0.4\textwidth} % Правая колонка (изображение)
 				\centering
-				\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{topology_mod_auct.png}
+				\includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{mrta4.jpeg}
 			\end{column}
 		\end{columns}
 	\end{frame}
@@ -219,21 +272,6 @@
 	
 	\begin{frame}
 		\frametitle{Выводы и перспективы}
-		\begin{block}{Основные результаты}
-			\begin{itemize}
-				\item Разработан модифицированный аукционный алгоритм
-				\item Доказана сходимость и локальная оптимальность
-				\item Эффективность подтверждена экспериментально
-			\end{itemize}
-		\end{block}
-		
-		\begin{block}{Перспективы развития}
-			\begin{itemize}
-				\item Улучшение глобальной оптимальности
-				\item Адаптация к динамическим сетям
-				\item Применение в промышленных системах
-			\end{itemize}
-		\end{block}
 	\end{frame}
 	
 \end{document}
